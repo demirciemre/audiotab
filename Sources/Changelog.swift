@@ -16,6 +16,18 @@ struct ChangelogEntry {
 
 enum Changelog {
     static let entries: [ChangelogEntry] = [
+        ChangelogEntry(version: "2.5.2", items: [
+            ("⌘Tab / ⌥Tab paneli daha hızlı açılıyor (60–95 ms); açılırken diğer tuşlar gecikmiyor",
+             "The ⌘Tab / ⌥Tab panel opens faster (60–95 ms); other keys no longer lag while it opens"),
+            ("Çok pencerede ⌥Tab önizlemeleri okunur boyutta kalıyor, panel Tab ya da trackpad ile kayıyor; görünmeyen kart seçilmiyor",
+             "With many windows ⌥Tab previews stay readable and the panel scrolls with Tab or the trackpad; hidden cards are never selected"),
+            ("Yeni uygulama ve menü çubuğu simgesi",
+             "New app and menu bar icon"),
+            ("Güvenli giriş sonrası macOS'un ⌘Tab'ı ile AudioTab paneli aynı anda açılmıyor; monitör numarası ekran bölme seçicisinin üstüne binmiyor",
+             "After secure input, macOS's ⌘Tab and AudioTab's panel no longer open together; the display number no longer covers the tiling picker"),
+            ("Güvenlik sıkılaştırmaları: güncelleyici, Finder favorileri, tanı bilgisi ve kurulum betiği",
+             "Security hardening: updater, Finder favorites, diagnostics and the install script"),
+        ]),
         ChangelogEntry(version: "2.5.1", items: [
             ("İlk Developer ID ile imzalı ve notarize edilmiş indirilebilir sürüm",
              "First downloadable release signed with Developer ID and notarized"),

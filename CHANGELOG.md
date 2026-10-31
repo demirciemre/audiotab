@@ -10,6 +10,7 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 - Güvenlik denetimi raporu: docs/security-audit.md (Cloudflare security-audit, standard profil)
 - Uygulamanın kendi simgesi: pencere kartında ses dalgası, macOS'un koyu, renkli ve şeffaf görünümleriyle
 - Simgenin SVG halleri docs/brand içinde: renkli, tek renk siyah, beyaz ve currentColor
+- Ayarlar › Sürümler'e 2.5.2 kaydı
 
 ### Değişenler
 
