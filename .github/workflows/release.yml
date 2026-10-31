@@ -30,8 +30,6 @@ jobs:
     runs-on: macos-15
     permissions:
       contents: write
-    env:
-      HAS_CERT: ${{ secrets.DEVELOPER_ID_P12 != '' && secrets.NOTARY_KEY_P8 != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,10 +46,30 @@ jobs:
             echo "Etiket ($GITHUB_REF_NAME) VERSION ile ($VERSION) eşleşmiyor"; exit 1
           fi
 
+      # Sırların varlığını tek tek denetle (değerleri değil, yalnızca adları yazdırılır).
+      # Sürüm etiketinde biri eksikse iş kırmızı biter: imzasız sürüm yayınlanmaz.
+      - name: İmza sırlarını denetle
+        id: sec
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          missing=""
+          for n in DEVELOPER_ID_P12 DEVELOPER_ID_P12_PASSWORD NOTARY_KEY_P8 NOTARY_KEY_ID NOTARY_ISSUER_ID; do
+            if [ -n "${!n}" ]; then echo "✔ $n var"; else echo "✖ $n eksik"; missing="$missing $n"; fi
+          done
+          if [ -z "$missing" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+          if [[ "$GITHUB_REF_TYPE" == "tag" && -n "$missing" ]]; then
+            echo "::error::Sürüm etiketi için imza sırları eksik:$missing"; exit 1
+          fi
+
       # İmza anahtarı yalnızca sürüm etiketinde açılır (main / PR / elle tetiklemede ad-hoc derlenir).
       # Developer ID Apple köküne bağlıdır; hiçbir sertifika "güvenilir kök" olarak eklenmez.
       - name: Developer ID sertifikasını yükle
-        if: env.HAS_CERT == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        if: steps.sec.outputs.ok == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         env:
           CERT_P12: ${{ secrets.DEVELOPER_ID_P12 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}

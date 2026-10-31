@@ -5,6 +5,10 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Düzeltilenler
+
+- Sürüm etiketinde imza sırları eksikse CI artık kırmızı biter; imzasız sürüm sessizce yayınlanmaz
+
 ## [v2.5.0] - 2026-10-31
 
 _Doğrulama: universal derleme (arm64+x86_64) yerelde ve CI'da geçti; Developer ID + hardened runtime imza zinciri doğrulandı; uygulama açılışta çökmüyor_
