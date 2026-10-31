@@ -5,6 +5,10 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+## [v2.5.2] - 2026-10-31
+
+_Doğrulama: yerel tür denetimi ve CI derlemesi (ec55d5d) geçti; ⌘Tab/⌥Tab hızı (60–95 ms), görünmeyen kart ve çift panel düzeltmeleri Developer ID imzalı yerel derlemede elle denendi_
+
 ### Eklenenler
 
 - Güvenlik denetimi raporu: docs/security-audit.md (Cloudflare security-audit, standard profil)
@@ -64,6 +68,7 @@ _Doğrulama: universal derleme (arm64+x86_64) yerelde ve CI'da geçti; Developer
 - install.sh karantinayı silmez; paketi Gatekeeper ve sabit Team ID ile denetler
 - CI artık hiçbir sertifikayı güvenilir kök olarak eklemiyor; action'lar commit SHA'sına sabitlendi
 
-[Unreleased]: https://github.com/demirciemre/audiotab/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/demirciemre/audiotab/compare/v2.5.2...HEAD
+[v2.5.2]: https://github.com/demirciemre/audiotab/compare/v2.5.1...v2.5.2
 [v2.5.1]: https://github.com/demirciemre/audiotab/compare/v2.5.0...v2.5.1
 [v2.5.0]: https://github.com/demirciemre/audiotab/releases/tag/v2.5.0
