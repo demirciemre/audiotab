@@ -1,0 +1,118 @@
+name: Release
+
+# main'e her gönderimde ve PR'larda Mac'te imzasız derler (derleme hatası varsa burada görünür).
+# Sürüm yalnızca "v*" etiketiyle çıkar (vc.py release etiketi atar): etiket VERSION ile eşleşmeli.
+# O zaman Developer ID ile imzalar (hardened runtime), Apple'a notarize ettirir, bileti zımbalar ve
+# AudioTab.zip'i o etiketin GitHub Release'ine ekler. Uygulamadaki güncelleyici bunu bulur.
+#
+# Gerekli sırlar (Settings › Secrets and variables › Actions):
+#   DEVELOPER_ID_P12           "Developer ID Application" sertifikası + anahtarı (.p12, base64)
+#   DEVELOPER_ID_P12_PASSWORD  .p12 parolası
+#   NOTARY_KEY_P8              App Store Connect API anahtarı (.p8, base64)
+#   NOTARY_KEY_ID              API anahtar kimliği
+#   NOTARY_ISSUER_ID           API issuer kimliği
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    env:
+      HAS_CERT: ${{ secrets.DEVELOPER_ID_P12 != '' && secrets.NOTARY_KEY_P8 != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Sürüm
+        id: ver
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "Geçersiz VERSION: $VERSION"; exit 1; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
+            echo "Etiket ($GITHUB_REF_NAME) VERSION ile ($VERSION) eşleşmiyor"; exit 1
+          fi
+
+      # İmza anahtarı yalnızca sürüm etiketinde açılır (main / PR / elle tetiklemede ad-hoc derlenir).
+      # Developer ID Apple köküne bağlıdır; hiçbir sertifika "güvenilir kök" olarak eklenmez.
+      - name: Developer ID sertifikasını yükle
+        if: env.HAS_CERT == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          CERT_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+        run: |
+          umask 077
+          KC="$RUNNER_TEMP/build.keychain-db"
+          echo "$CERT_P12" | tr -d '[:space:]' | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          KC_PW="$(openssl rand -hex 24)"
+          echo "::add-mask::$KC_PW"
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign -x
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KC_PW" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          IDENTITY=$(security find-identity -v -p codesigning "$KC" | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+          if [ -z "$IDENTITY" ]; then echo "Developer ID Application kimliği bulunamadı"; exit 1; fi
+          echo "SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "$NOTARY_KEY_P8" | tr -d '[:space:]' | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          echo "NOTARY_KEY=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
+          echo "İmza kimliği: $IDENTITY"
+
+      - name: Derle (PR / imzasız)
+        if: env.SIGN_IDENTITY == ''
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: ./build.sh --universal --version "$VERSION"
+
+      - name: Derle, imzala, notarize et
+        if: env.SIGN_IDENTITY != ''
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          ./build.sh --universal --version "$VERSION" --notarize
+          codesign -dv --verbose=2 AudioTab.app 2>&1 | grep -E "Identifier|Authority|TeamIdentifier|flags|Timestamp" || true
+
+      - name: Paketle (imzasız)
+        if: env.SIGN_IDENTITY == ''
+        run: ditto -c -k --keepParent AudioTab.app AudioTab.zip
+
+      - name: Temizle
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/notary.p8"
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
+
+      - name: Derleme çıktısı
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: AudioTab
+          path: AudioTab.zip
+
+      - name: Sürümü yayınla
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && env.SIGN_IDENTITY != ''
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: AudioTab ${{ steps.ver.outputs.version }}
+          files: AudioTab.zip
+          fail_on_unmatched_files: true

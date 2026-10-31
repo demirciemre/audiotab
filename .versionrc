@@ -1,0 +1,11 @@
+# vc.py ayarları (claude-code-version-control-skill). Bu dosya çalıştırılmaz, yalnızca okunur.
+# SCHEME: semver (v1.2.3) | counter (mockup-v12). TEST_CMD boşsa release --verified ister.
+TAG_PREFIX="v"
+SCHEME="semver"
+TEST_CMD=""
+COMMIT_LINT="warn"
+REMOTE="origin"
+GH_RELEASE="true"
+LANG="tr"
+CHANGELOG="CHANGELOG.md"
+VERSION_FILE="VERSION"

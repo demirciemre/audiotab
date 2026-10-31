@@ -1,0 +1,26 @@
+#!/bin/sh
+# vc commit-msg hook (claude-code-version-control-skill)
+# Conventional Commits: <tür>(<kapsam>)!: <açıklama>  ör. feat(mockup): JSON içe aktarma
+# Mod: warn (uyarır, geçirir) | strict (reddeder) | off
+msg_file="$1"
+first=$(sed -n '1p' "$msg_file")
+# Mod: git config vc.commitLint (vc.py init yazar), yoksa kökteki .versionrc, yoksa warn
+mode=$(git config --get vc.commitLint 2>/dev/null)
+if [ -z "$mode" ]; then
+  root=$(git rev-parse --show-toplevel 2>/dev/null)
+  [ -f "$root/.versionrc" ] && mode=$(sed -n 's/^COMMIT_LINT=["'\'']*\([a-z]*\)["'\'']*$/\1/p' "$root/.versionrc" | head -1)
+fi
+[ -z "$mode" ] && mode=warn
+[ "$mode" = "off" ] && exit 0
+case "$first" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *|amend!\ *) exit 0 ;;
+esac
+if printf '%s' "$first" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|prompt|security)(\([^)]+\))?!?: .+'; then
+  exit 0
+fi
+echo "commit-msg: mesaj Conventional Commits biçiminde değil:" >&2
+echo "  \"$first\"" >&2
+echo "  Beklenen: <tür>(<kapsam>): <açıklama>   türler: feat fix docs style refactor perf test build ci chore revert prompt security" >&2
+echo "  Örnek:    feat(mockup): JSON içe aktarma ekranı" >&2
+[ "$mode" = "strict" ] && exit 1
+exit 0
