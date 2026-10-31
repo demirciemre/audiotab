@@ -8,10 +8,16 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 ### Eklenenler
 
 - Güvenlik denetimi raporu: docs/security-audit.md (Cloudflare security-audit, standard profil)
+- Uygulamanın kendi simgesi: pencere kartında ses dalgası, macOS'un koyu, renkli ve şeffaf görünümleriyle
+- Simgenin SVG halleri docs/brand içinde: renkli, tek renk siyah, beyaz ve currentColor
 
 ### Değişenler
 
 - ⌘Tab / ⌥Tab paneli daha hızlı açılıyor: tuş hemen yakalanıyor, pencere listesi ve yerleşim 60 ms'lik bekleme içinde hazırlanıyor; liste çıkarılırken diğer tuş basışları artık gecikmiyor
+- ⌥Tab önizlemeleri 130 px'in altına küçülmüyor; daha fazla pencere varsa panel kendi içinde kayıyor (Tab ile ya da trackpad/fare tekerleğiyle), kenarda kaç pencere daha olduğu yazıyor
+- README yeniden düzenlendi: simge, rozetler, kurulum yolları, özellik listesi, güvenlik farkları ve gizlilik
+- Menü çubuğu simgesi uygulama logosunun tek renkli hali; seçili ses cihazı simgenin ipucunda yazıyor
+- README tek sayfalık tanıtım sayfası: her özellik için temsili ekran görseli (tools/readme-art ile üretilir)
 
 ### Düzeltilenler
 

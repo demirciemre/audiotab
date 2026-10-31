@@ -239,7 +239,6 @@ import UserNotifications
 
     private func updateIcon() {
         let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
-        let symbol = store.current?.symbol ?? "speaker.wave.2"
         if capture?.isRecording == true {
             let rec = NSImage(systemSymbolName: "record.circle.fill", accessibilityDescription: L("Kaydediliyor"))?
                 .withSymbolConfiguration(config)
@@ -250,11 +249,7 @@ import UserNotifications
             return
         }
         statusItem.button?.contentTintColor = nil
-        let image = (NSImage(systemSymbolName: symbol, accessibilityDescription: "AudioTab")
-                     ?? NSImage(systemSymbolName: "speaker.wave.2", accessibilityDescription: "AudioTab"))?
-            .withSymbolConfiguration(config)
-        image?.isTemplate = true
-        statusItem.button?.image = image
+        statusItem.button?.image = StatusIcon.image   // seçili ses cihazı ipucunda yazar
         statusItem.button?.toolTip = store.current.map { "AudioTab · \($0.name)" } ?? "AudioTab"
     }
 

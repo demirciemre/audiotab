@@ -159,6 +159,7 @@ private let englishStrings: [String: String] = [
     "Ekranı böl  ⌘<": "Split screen  ⌘<",
     "⌘< → kaça bölüneceğini seç → hangi pencere hangi bölmeye. ⌘Tab kartlarındaki bölme düğmesi aynı işi tek pencere için yapar. Açıkken macOS'un ⌘< (aynı uygulamanın pencereleri arasında geçiş) kısayolu kapanır.": "⌘< → choose how to split → which window goes where. The split button on ⌘Tab cards does the same for one window. While on, the macOS ⌘< shortcut (cycle windows of the same app) is disabled.",
     "Hedef monitör": "Target display",
+    "%d pencere daha": "%d more windows",
     "Birden fazla monitör varken. Panelde Tab ile her zaman değiştirebilirsin.": "With multiple displays. You can always change it with Tab in the panel.",
     "Farenin olduğu": "Under the mouse",
     "Her seferinde sor": "Ask every time",

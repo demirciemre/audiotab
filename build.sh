@@ -87,6 +87,15 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BUILD/AudioTab" "$APP/Contents/MacOS/AudioTab"
 chmod +x "$APP/Contents/MacOS/AudioTab"
 
+# Simge: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns (repoda derlenmiş hali de var).
+# Icon Composer dosyası değiştiyse ve actool (Xcode 26+) varsa yeniden derlenir; yoksa repodaki kullanılır.
+if [[ -d Icon/AppIcon.icon ]]; then
+  if [[ ! -f Resources/Assets.car || -n "$(find Icon/AppIcon.icon -newer Resources/Assets.car | head -1)" ]]; then
+    ./tools/make_icon.sh || echo "⚠️  Simge derlenemedi (Xcode 26 gerekir); repodaki derlenmiş simge kullanılıyor."
+  fi
+  [[ -f Resources/Assets.car ]] && cp -X Resources/Assets.car Resources/AppIcon.icns "$APP/Contents/Resources/"
+fi
+
 BUILD_NUMBER="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -98,6 +107,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleDisplayName</key><string>AudioTab</string>
   <key>CFBundleExecutable</key><string>AudioTab</string>
   <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleIconName</key><string>AppIcon</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>

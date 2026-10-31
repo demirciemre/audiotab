@@ -1275,12 +1275,19 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     /// Panel görünmüyorsa öne getir (yerleşim show(..., reveal: false) ile önceden yapıldı)
     func reveal() {
         guard !panel.isVisible else { return }
+        if scrollMonitor == nil {
+            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] e in
+                MainActor.assumeIsolated { self?.scrolled(e) }
+                return e
+            }
+        }
         panel.alphaValue = 1
         panel.orderFrontRegardless()   // animasyon yok: anında görünür
         panel.invalidateShadow()
     }
 
     func show(_ items: [Item], selected: Int, thumbs: [CGWindowID: CGImage], reveal: Bool = true) {
+        lastSelected = selected
         lastItems = items
         lastThumbs = thumbs
         cells.forEach { $0.removeFromSuperview() }
@@ -1316,6 +1323,15 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
 
     /// Izgarada görünen ilk satır (tüm pencereler sığmadığında seçimle birlikte kayar)
     private var firstRow = 0
+    /// Önizlemeler bundan küçülmez; daha fazla pencere varsa panel kendi içinde kayar
+    static let minGridThumbH: CGFloat = 130
+    /// false: fareyle kaydırılıyor, seçili kart görünür alana çekilmez
+    private var followSelection = true
+    private var lastSelected = 0
+    private var scrollMonitor: Any?
+    private var scrollAccum: CGFloat = 0
+    private let moreAbove = NSTextField(labelWithString: "")
+    private let moreBelow = NSTextField(labelWithString: "")
 
     private func layoutGrid(_ items: [Item], selected: Int, thumbs: [CGWindowID: CGImage], screen: NSScreen) {
         let vf = screen.visibleFrame
@@ -1329,7 +1345,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         thumbH = preparedThumbH   // her çizimde hazırlanan boydan başla (art arda küçülmesin)
         // Tüm pencereler sığana kadar önizlemeleri küçült; sığmayan kart çizilmeden seçilemesin
         for attempt in 0..<8 {
-            if attempt > 0 { thumbH = max(90, (thumbH * 0.86).rounded()) }
+            if attempt > 0 { thumbH = max(Self.minGridThumbH, (thumbH * 0.86).rounded()) }
             maxRows = max(1, Int((vf.height * 0.88 - pad * 2 - headerH + gap) / (cellH + gap)))
             rowList = [[]]; widths = []
             var rowW: CGFloat = 0
@@ -1342,13 +1358,14 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                 rowW += (rowList[rowList.count - 1].isEmpty ? 0 : gap) + w
                 rowList[rowList.count - 1].append(i)
             }
-            if rowList.count <= maxRows || !previews || thumbH <= 90 { break }
+            if rowList.count <= maxRows || !previews || thumbH <= Self.minGridThumbH { break }
         }
         // Hâlâ sığmıyorsa seçili kartın satırı görünecek şekilde kaydır
         if rowList.count > maxRows {
-            let selRow = rowList.firstIndex { $0.contains(selected) } ?? 0
-            if selRow < firstRow { firstRow = selRow }
-            if selRow >= firstRow + maxRows { firstRow = selRow - maxRows + 1 }
+            if followSelection, let selRow = rowList.firstIndex(where: { $0.contains(selected) }) {
+                if selRow < firstRow { firstRow = selRow }
+                if selRow >= firstRow + maxRows { firstRow = selRow - maxRows + 1 }
+            }
             firstRow = min(max(0, firstRow), rowList.count - maxRows)
             rows = Array(rowList[firstRow..<(firstRow + maxRows)])
         } else {
@@ -1356,6 +1373,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
             rows = rowList
         }
         visibleRange = (rows.first?.first ?? 0)..<((rows.last?.last ?? -1) + 1)
+        let hiddenAbove = visibleRange.lowerBound, hiddenBelow = items.count - visibleRange.upperBound
         func width(of row: [Int]) -> CGFloat { row.reduce(0) { $0 + widths[$1] } + CGFloat(max(0, row.count - 1)) * gap }
 
         let contentW = rows.map(width).max() ?? 0
@@ -1381,6 +1399,33 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                 cx += widths[i] + gap
             }
         }
+        placeMoreHints(above: hiddenAbove, below: hiddenBelow, cw: cw, h: h)
+    }
+
+    /// Kaydırılabilir ızgarada üst/alt kenarda kaç pencere daha olduğu (ör. "↓ 6 pencere daha")
+    private func placeMoreHints(above: Int, below: Int, cw: CGFloat, h: CGFloat) {
+        for (label, n, y, arrow) in [(moreAbove, above, h - pad + 3, "↑"), (moreBelow, below, 3, "↓")] {
+            guard n > 0 else { label.removeFromSuperview(); continue }
+            label.stringValue = "\(arrow) " + L("%d pencere daha", n)
+            label.font = .systemFont(ofSize: 11, weight: .medium)
+            label.textColor = .white.withAlphaComponent(0.6)
+            label.alignment = .center
+            label.frame = NSRect(x: 0, y: y, width: cw, height: 15)
+            if label.superview == nil { glass.addSubview(label) }
+        }
+    }
+
+    /// Fare/trackpad ile panelin içinde satır satır kaydır (yalnızca ızgara taşınca)
+    private func scrolled(_ e: NSEvent) {
+        guard !listMode, !groupedMode, e.window === panel, !lastItems.isEmpty else { return }
+        scrollAccum += e.hasPreciseScrollingDeltas ? e.scrollingDeltaY / 40 : e.scrollingDeltaY
+        guard abs(scrollAccum) >= 1 else { return }
+        let d = scrollAccum > 0 ? -1 : 1   // içerik yukarı itilince alttaki satırlar gelir
+        scrollAccum = 0
+        firstRow += d
+        followSelection = false
+        show(lastItems, selected: lastSelected, thumbs: lastThumbs)
+        followSelection = true
     }
 
     /// Bölümlü görünüm: bölümler yan yana sütunlar (Tarayıcılar … Klasörler en sağda), aralarında ince çizgi.
@@ -1580,6 +1625,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     }
 
     func setSelected(_ i: Int) {
+        lastSelected = i
         // Liste ve ızgarada seçim görünen aralığın dışına çıktıysa kaydır
         if listMode || !groupedMode, i >= 0, !visibleRange.contains(i), panel.isVisible, lastItems.indices.contains(i) {
             show(lastItems, selected: i, thumbs: lastThumbs)
@@ -1601,6 +1647,9 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         lastThumbs = [:]
         visibleRange = 0..<0
         firstRow = 0
+        scrollAccum = 0
+        moreAbove.removeFromSuperview(); moreBelow.removeFromSuperview()
+        if let m = scrollMonitor { NSEvent.removeMonitor(m); scrollMonitor = nil }
     }
 }
 
