@@ -8,3 +8,7 @@ AudioTab.zip
 signing-secrets/
 publish.sh
 .claude/
+*.p8
+*.pem
+.env*
+notary.json

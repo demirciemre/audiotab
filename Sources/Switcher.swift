@@ -602,7 +602,9 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         gAudioKeys?.handle(type, code, flags)              // ses kısayolu (hiçbir tuşu yutmaz)
         if gExtraKeys?.handle(type, code, flags, event) == true { return true }   // ⌘⇧3/4/5/6, ⌘<, ⌘⇧<
         // Harici ekranlar karartılmışken tuşlar arkadaki pencerelere gitmesin (⌘⇧< yukarıda zaten işlendi)
-        if (type == .keyDown || type == .keyUp), Monitors.shared.isBlackedOut, MonitorSettings.lockKeysWhenDark { return true }
+        // Kilit yalnızca ⌘⇧< kaçışı açıkken: kısayol kapatıldıysa klavye kilitlenmez
+        if (type == .keyDown || type == .keyUp), Monitors.shared.isBlackedOut,
+           MonitorSettings.lockKeysWhenDark, MonitorSettings.blackoutKey { return true }
         if gSwitcher?.isActive != true, FinderMouseNav.handle(type, event) { return true }   // fare 4/5: Finder'da geri/ileri
         return gSwitcher?.handle(type, code, flags) ?? false
     }
@@ -639,7 +641,12 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         u.onPickFilter = { [weak self] i in self?.setFilter(index: i) }
         u.onOpenFavorite = { [weak self] url in
             self?.end()
-            NSWorkspace.shared.open(url)
+            // Paket (ör. .app) klasör gibi görünse de açmak onu çalıştırır: Finder'da göster
+            if NSWorkspace.shared.isFilePackage(atPath: url.path) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            } else {
+                NSWorkspace.shared.open(url)
+            }
         }
         return u
     }()

@@ -23,7 +23,7 @@ echo "▶ Son sürüm indiriliyor..."
 curl --proto '=https' --tlsv1.2 -fsSL "https://github.com/$REPO/releases/latest/download/AudioTab.zip" -o "$TMP/AudioTab.zip"
 ditto -x -k "$TMP/AudioTab.zip" "$TMP/x"
 APP="$TMP/x/AudioTab.app"
-[[ -d "$APP" ]] || { echo "✖ Paket içinde AudioTab.app yok." >&2; exit 1; }
+[[ -d "$APP" && ! -L "$APP" ]] || { echo "✖ Paket içinde AudioTab.app yok." >&2; exit 1; }
 
 REQ="anchor apple generic and identifier \"$BUNDLE_ID\" and certificate 1[field.1.2.840.113635.100.6.2.6] and certificate leaf[field.1.2.840.113635.100.6.1.13] and certificate leaf[subject.OU] = \"$TEAM_ID\" and notarized"
 if ! codesign --verify --deep --strict -R="$REQ" "$APP" 2>/dev/null; then
@@ -39,6 +39,11 @@ pkill -x AudioTab 2>/dev/null || true
 sleep 0.5
 rm -rf /Applications/AudioTab.app
 ditto "$APP" /Applications/AudioTab.app
+if ! codesign --verify --deep --strict -R="$REQ" /Applications/AudioTab.app 2>/dev/null; then
+  rm -rf /Applications/AudioTab.app
+  echo "✖ Kopyalanan uygulama doğrulanamadı, kaldırıldı." >&2
+  exit 1
+fi
 open /Applications/AudioTab.app
 
 echo "✅ AudioTab kuruldu. Bundan sonraki sürümler uygulamanın içinden güncellenir."

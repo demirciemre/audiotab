@@ -187,7 +187,7 @@ final class BrowserProfiles: @unchecked Sendable {
             let profiles = names(bid, force: true)
             out.append("== \(app.localizedName ?? bid) (\(bid))")
             for p in profiles {
-                out.append("profil: \(p.id) | ad: \(p.localName) | hesap: \(p.accountNames.joined(separator: " / "))")
+                out.append("profil: \(p.id) | ad: \(Self.redact(p.localName)) | hesap: \(p.accountNames.isEmpty ? "—" : "<gizli>")")
             }
             let axApp = AXUIElementCreateApplication(app.processIdentifier)
             AXUIElementSetMessagingTimeout(axApp, 0.3)
@@ -196,15 +196,18 @@ final class BrowserProfiles: @unchecked Sendable {
                 let title: String = AX.attr(w, kAXTitleAttribute) ?? ""
                 let btns = collectButtons(w)
                 let result = match(btns, profiles).map { $0.localName } ?? "—"
-                out.append("-- pencere: \(title.prefix(60)) → \(result)")
+                out.append("-- pencere: \(Self.redact(title).prefix(60)) → \(Self.redact(result))")
                 for b in btns.sorted(by: { $0.x > $1.x }).prefix(12) {
-                    out.append("   x=\(Int(b.x))  \(b.texts.map { String($0.prefix(60)) }.joined(separator: " | "))")
+                    out.append("   x=\(Int(b.x))  \(b.texts.map { String(Self.redact($0).prefix(60)) }.joined(separator: " | "))")
                 }
             }
         }
-        // E-postaları gizle
-        let text = out.joined(separator: "\n")
-        return text.replacingOccurrences(of: #"[^\s@|]+@[^\s@|]+"#, with: "<e-posta>", options: .regularExpression)
+        return out.joined(separator: "\n")
+    }
+
+    /// E-postaları kısaltmadan ÖNCE gizle: yarım kesilmiş bir adres de açığa çıkmasın
+    private static func redact(_ s: String) -> String {
+        s.replacingOccurrences(of: #"[^\s@|]+@[^\s@|]*"#, with: "<e-posta>", options: .regularExpression)
     }
 
     /// Tarayıcının profil adları (ve varsa tema rengi), Local State'ten

@@ -45,7 +45,6 @@ if ! command -v swiftc >/dev/null; then
   exit 1
 fi
 
-xattr -cr . 2>/dev/null || true
 
 BUILD="$(mktemp -d)"
 trap 'rm -rf "$BUILD"' EXIT
@@ -128,12 +127,17 @@ if [[ $NOTARIZE == 1 ]]; then
   else
     AUTH=(--key "${NOTARY_KEY:?NOTARY_KEY gerekli}" --key-id "${NOTARY_KEY_ID:?NOTARY_KEY_ID gerekli}" --issuer "${NOTARY_ISSUER:?NOTARY_ISSUER gerekli}")
   fi
-  xcrun notarytool submit "$BUILD/notarize.zip" "${AUTH[@]}" --wait --timeout 30m --output-format json > "$BUILD/notary.json" || true
+  # Yeni hesapların ilk gönderimleri Apple tarafında saatler sürebilir; sonrakiler genelde dakikalar
+  xcrun notarytool submit "$BUILD/notarize.zip" "${AUTH[@]}" --wait --timeout "${NOTARY_TIMEOUT:-2h}" --output-format json > "$BUILD/notary.json" || true
   if ! grep -q '"status" *: *"Accepted"' "$BUILD/notary.json"; then
     cat "$BUILD/notary.json"
     SUB_ID="$(sed -n 's/.*"id" *: *"\([^"]*\)".*/\1/p' "$BUILD/notary.json" | head -1)"
-    [[ -n "$SUB_ID" ]] && xcrun notarytool log "$SUB_ID" "${AUTH[@]}" || true
-    echo "❌ Notarize reddedildi."
+    if grep -q '"status" *: *"\(Invalid\|Rejected\)"' "$BUILD/notary.json"; then
+      [[ -n "$SUB_ID" ]] && xcrun notarytool log "$SUB_ID" "${AUTH[@]}" || true
+      echo "❌ Notarize reddedildi."
+    else
+      echo "❌ Notarize zaman aşımı: Apple henüz işlemeyi bitirmedi (gönderim: ${SUB_ID:-?}). Daha sonra yeniden deneyin."
+    fi
     exit 1
   fi
   xcrun stapler staple "$APP"

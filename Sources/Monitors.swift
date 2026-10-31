@@ -194,8 +194,9 @@ private enum DDC {
                 DispatchQueue.main.async {
                     MainActor.assumeIsolated {
                         guard let i = self.displays.firstIndex(where: { $0.id == id }) else { return }
-                        if let b { self.displays[i].brightnessMax = b.max; self.displays[i].brightness = Double(b.current) * 100 / Double(b.max) }
-                        if let v { self.displays[i].volumeMax = v.max; self.displays[i].volume = Double(v.current) * 100 / Double(v.max) }
+                        // Ekranın bildirdiği değer en büyük değeri aşamaz (bozuk DDC cevabı %100'ü geçmesin)
+                        if let b { self.displays[i].brightnessMax = b.max; self.displays[i].brightness = Double(min(b.current, b.max)) * 100 / Double(b.max) }
+                        if let v { self.displays[i].volumeMax = v.max; self.displays[i].volume = Double(min(v.current, v.max)) * 100 / Double(v.max) }
                         if v != nil { self.displays[i].volumeSeen = true }
                         self.displays[i].volumeSupported = v != nil || self.displays[i].volumeSeen
                     }

@@ -88,11 +88,11 @@ enum Favorites {
         for ext in ["sfl3", "sfl2"] {
             let f = dir.appendingPathComponent("com.apple.LSSharedFileList.FavoriteItems.\(ext)")
             guard let data = try? Data(contentsOf: f) else { continue }
-            guard let un = try? NSKeyedUnarchiver(forReadingFrom: data) else { continue }
-            un.requiresSecureCoding = false
-            un.decodingFailurePolicy = .setErrorAndReturn   // bilinmeyen sınıf varsa çökme, boş dön
-            let root = (try? un.decodeTopLevelObject(forKey: NSKeyedArchiveRootObjectKey)) as? NSDictionary
-            un.finishDecoding()
+            // Güvenli çözme: yalnızca plist türleri oluşturulur. Dosyada başka bir sınıf adı geçerse
+            // (ör. değiştirilmiş bir arşiv) hiçbir nesne oluşturulmadan boş dönülür.
+            let allowed: [AnyClass] = [NSDictionary.self, NSArray.self, NSString.self, NSData.self,
+                                       NSNumber.self, NSUUID.self, NSDate.self, NSURL.self]
+            let root = (try? NSKeyedUnarchiver.unarchivedObject(ofClasses: allowed, from: data)) as? NSDictionary
             guard let arr = root?["items"] as? [NSDictionary] else { continue }
             var out: [Entry] = []
             for it in arr {

@@ -22,6 +22,7 @@ import UserNotifications
     private var permTimer: Timer?
     private var guardTimer: Timer?
     private var secureActive = false
+    private var signalSources: [DispatchSourceSignal] = []
     private var lastSecureNotice = Date.distantPast
     private var bag = Set<AnyCancellable>()
 
@@ -33,8 +34,14 @@ import UserNotifications
         // AudioTab kısayolları dinlemeye başlayınca yalnızca gerekenler yeniden kapanır
         setNativeHotkeys(allManagedNativeHotkeys, enabled: true)
         // Kapattığımız macOS kısayollarını (⌘Tab, ⌘⇧3/4/5…) her durumda geri aç
-        signal(SIGTERM) { _ in restoreNativeHotkeys(); exit(0) }
-        signal(SIGINT) { _ in restoreNativeHotkeys(); exit(0) }
+        // Sinyal işleyicisinde güvenli olmayan kod çalışmasın: sinyal ana kuyrukta işlenir
+        for sig in [SIGTERM, SIGINT] {
+            signal(sig, SIG_IGN)
+            let src = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+            src.setEventHandler { restoreNativeHotkeys(); exit(0) }
+            src.resume()
+            signalSources.append(src)
+        }
 
         // Menü çubuğu: tek ikon, o an çalan ses cihazının simgesi
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -51,7 +58,11 @@ import UserNotifications
         panel = DevicePanelController(store: store)
 
         let model = SettingsModel(store: store)
-        model.onNativeTabChanged = { [weak self] in self?.switcher.applyNative() }
+        // Güvenli giriş sürerken macOS'un ⌘Tab'ı açık kalmalı; bitince guardTick yeniden uygular
+        model.onNativeTabChanged = { [weak self] in
+            guard let self, !self.secureActive else { return }
+            self.switcher.applyNative()
+        }
         model.onDeepScanChanged = { [weak self] in self?.switcher.deepScopeChanged() }
         model.onDockDragChanged = { [weak self] in self?.dockDrag.start() }
         model.onHotkeyChanged = { [weak self] in self?.applyAudioKeySettings() }

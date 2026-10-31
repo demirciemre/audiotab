@@ -202,16 +202,17 @@ final class Updater: ObservableObject {
             let msg = json?["message"] as? String ?? "HTTP \(status)"
             throw UpdateError.message("GitHub: \(msg)")
         }
-        guard let json, let tag = json["tag_name"] as? String else {
+        guard let json, let tag = json["tag_name"] as? String, isReleaseTag(tag),
+              let fallback = downloadURL(tag: tag) else {
             throw UpdateError.message(L("GitHub cevabı okunamadı"))
         }
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         let assets = json["assets"] as? [[String: Any]] ?? []
         let dl = assets.first(where: { ($0["name"] as? String) == "AudioTab.zip" })
             .flatMap { ($0["browser_download_url"] as? String).flatMap(URL.init(string:)) }
-            .flatMap { u in u.scheme == "https" && UpdateConfig.isAllowed(u) ? u : nil }
-            ?? downloadURL(tag: tag)
-        let page = (json["html_url"] as? String).flatMap(URL.init(string:)) ?? UpdateConfig.releasesPage
+            .flatMap { u in UpdateConfig.isAllowed(u) ? u : nil }
+            ?? fallback
+        let page = releasePage(json["html_url"])
         return ReleaseInfo(version: version, notes: json["body"] as? String ?? "", zipURL: dl, page: page)
     }
 
@@ -228,15 +229,26 @@ final class Updater: ObservableObject {
             throw UpdateError.message(L("Henüz yayınlanmış sürüm yok"))
         }
         let tag = final.lastPathComponent
-        guard tag.range(of: "^v?[0-9]+\\.[0-9]+\\.[0-9]+$", options: .regularExpression) != nil else {
+        guard isReleaseTag(tag), let dl = downloadURL(tag: tag) else {
             throw UpdateError.message(L("GitHub cevabı okunamadı"))
         }
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-        return ReleaseInfo(version: version, notes: "", zipURL: downloadURL(tag: tag), page: final)
+        return ReleaseInfo(version: version, notes: "", zipURL: dl, page: final)
     }
 
-    private static func downloadURL(tag: String) -> URL {
-        URL(string: "https://github.com/\(UpdateConfig.repo)/releases/download/\(tag)/AudioTab.zip")!
+    /// Sürüm etiketi yalnızca "v1.2.3" biçiminde olabilir: adres ve sürüm karşılaştırması buna güvenir
+    static func isReleaseTag(_ tag: String) -> Bool {
+        tag.range(of: "^v?[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6}$", options: .regularExpression) != nil
+    }
+
+    private static func downloadURL(tag: String) -> URL? {
+        URL(string: "https://github.com/\(UpdateConfig.repo)/releases/download/\(tag)/AudioTab.zip")
+    }
+
+    /// Sürüm sayfası yalnızca GitHub'da olabilir; başka bir adres gelirse repo sayfası açılır
+    private static func releasePage(_ value: Any?) -> URL {
+        (value as? String).flatMap(URL.init(string:)).flatMap { UpdateConfig.isAllowed($0) ? $0 : nil }
+            ?? UpdateConfig.releasesPage
     }
 
     /// Tüm yayınlanmış sürümleri getir (taslak / ön sürüm hariç)
@@ -271,14 +283,15 @@ final class Updater: ObservableObject {
         let iso = ISO8601DateFormatter()
         return arr.compactMap { r -> ReleaseInfo? in
             guard (r["draft"] as? Bool) != true, (r["prerelease"] as? Bool) != true,
-                  let tag = r["tag_name"] as? String else { return nil }
+                  let tag = r["tag_name"] as? String, isReleaseTag(tag),
+                  let fallback = downloadURL(tag: tag) else { return nil }
             let assets = r["assets"] as? [[String: Any]] ?? []
             guard let asset = assets.first(where: { ($0["name"] as? String) == "AudioTab.zip" }) else { return nil }
             let dl = (asset["browser_download_url"] as? String).flatMap(URL.init(string:))
-                .flatMap { u in u.scheme == "https" && UpdateConfig.isAllowed(u) ? u : nil }
-                ?? downloadURL(tag: tag)
+                .flatMap { u in UpdateConfig.isAllowed(u) ? u : nil }
+                ?? fallback
             let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-            let page = (r["html_url"] as? String).flatMap(URL.init(string:)) ?? UpdateConfig.releasesPage
+            let page = releasePage(r["html_url"])
             let date = (r["published_at"] as? String).flatMap { iso.date(from: $0) }
             return ReleaseInfo(version: version, notes: r["body"] as? String ?? "", zipURL: dl, page: page, date: date)
         }
@@ -330,7 +343,9 @@ final class Updater: ObservableObject {
                 set(.installing)
                 try Self.run("/usr/bin/ditto", ["-x", "-k", zip.path, work.path])
                 let newApp = work.appendingPathComponent("AudioTab.app")
-                guard fm.fileExists(atPath: newApp.path) else { throw UpdateError.message(L("Paket içinde AudioTab.app yok")) }
+                // Gerçek bir klasör olmalı: sembolik bağlantı başka bir yerdeki paketi gösterebilir
+                let kind = (try? fm.attributesOfItem(atPath: newApp.path)[.type]) as? FileAttributeType
+                guard kind == .typeDirectory else { throw UpdateError.message(L("Paket içinde AudioTab.app yok")) }
                 try Self.verify(newApp, requirement: requirement)
                 // İmzalı paketin içindeki sürüm, yayındaki sürümle aynı olmalı. Eski sürüme yalnızca
                 // kullanıcı Sürümler sekmesinden kendisi seçtiyse dönülür; otomatik güncelleme hep ileri gider.
@@ -343,7 +358,7 @@ final class Updater: ObservableObject {
                 _ = try? Self.run("/usr/bin/xattr", ["-dr", "com.apple.quarantine", newApp.path])
 
                 let dest = Bundle.main.bundleURL
-                try Self.replace(dest, with: newApp)
+                try Self.replace(dest, with: newApp, requirement: requirement)
 
                 DispatchQueue.main.async {
                     beforeRelaunch {
@@ -356,18 +371,30 @@ final class Updater: ObservableObject {
         }
     }
 
-    private static func replace(_ dest: URL, with newApp: URL) throws {
+    /// Yeni paketi hedefin yanına kopyalar, kopyayı yeniden doğrular, sonra tek adımda yerine taşır.
+    /// Böylece doğrulanan paket ile kurulan paket aynı olur ve yarım kopya hiç yerinde durmaz.
+    private static func replace(_ dest: URL, with newApp: URL, requirement: String) throws {
         let fm = FileManager.default
-        guard fm.isWritableFile(atPath: dest.deletingLastPathComponent().path) else {
-            throw UpdateError.message(L("%@ klasörüne yazılamıyor", dest.deletingLastPathComponent().path))
+        let parent = dest.deletingLastPathComponent()
+        guard fm.isWritableFile(atPath: parent.path) else {
+            throw UpdateError.message(L("%@ klasörüne yazılamıyor", parent.path))
         }
-        // Eski sürümü çöpe at (geri dönmek istersen Çöp'te durur), yenisini yerine kopyala
-        var trashed: NSURL?
-        try fm.trashItem(at: dest, resultingItemURL: &trashed)
+        let staged = parent.appendingPathComponent(".AudioTab-update-\(UUID().uuidString).app", isDirectory: true)
+        try fm.copyItem(at: newApp, to: staged)
         do {
-            try fm.copyItem(at: newApp, to: dest)
+            try verify(staged, requirement: requirement)
         } catch {
-            if let back = trashed as URL? { try? fm.moveItem(at: back, to: dest) }
+            try? fm.removeItem(at: staged)
+            throw error
+        }
+        // Eski sürümü çöpe at (geri dönmek istersen Çöp'te durur), doğrulanmış kopyayı yerine taşı
+        var trashed: NSURL?
+        do {
+            try fm.trashItem(at: dest, resultingItemURL: &trashed)
+            try fm.moveItem(at: staged, to: dest)
+        } catch {
+            if let back = trashed as URL?, !fm.fileExists(atPath: dest.path) { try? fm.moveItem(at: back, to: dest) }
+            try? fm.removeItem(at: staged)
             throw error
         }
     }
@@ -407,7 +434,9 @@ final class Updater: ObservableObject {
         }
         // kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate:
         // evrensel ikilinin iki dilimi de, iç içe kod da, paket içinde fazladan/sembolik bağlantılı dosya olmadan
-        let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate)
+        // + kSecCSEnforceRevocationChecks: iptal edilmiş bir Developer ID / notarize bileti de reddedilir
+        let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate
+                                         | SecCSFlags.enforceRevocationChecks.rawValue)
         let status = SecStaticCodeCheckValidity(newCode, flags, req)
         if status == errSecCSReqFailed {
             throw UpdateError.message(L("Yeni sürüm bu uygulamanın Developer ID'siyle imzalanıp notarize edilmemiş, yüklenmedi"))

@@ -5,6 +5,23 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Eklenenler
+
+- Güvenlik denetimi raporu: docs/security-audit.md (Cloudflare security-audit, standard profil)
+
+### Düzeltilenler
+
+- Notarize zaman aşımı 2 saate çıktı ve reddedilmeden ayrı raporlanıyor
+- Tanı bilgisi kopyalanırken e-postalar kısaltmadan önce gizleniyor; hesap adları maskeleniyor
+- Güvenli giriş sırasında ⌘Tab ayarı değiştirilince macOS ⌘Tab'ı kapanmıyor; karartma klavye kilidi yalnızca ⌘⇧< kaçışı açıkken devrede; sinyaller güvenli işleniyor
+
+### Güvenlik
+
+- Finder favorileri arşivi artık yalnızca izinli plist türleriyle açılıyor (güvensiz NSKeyedUnarchiver kaldırıldı); .app favorileri çalıştırılmak yerine Finder'da gösteriliyor
+- Güncelleyici: sürüm etiketi her yolda doğrulanıyor, sürüm sayfası yalnızca GitHub, paket hedefin yanında yeniden doğrulanıp tek adımda yerine taşınıyor, iptal edilmiş imzalar reddediliyor
+- CI: derleme işi salt okunur, yazma yetkisi yalnızca imzalı etiket sonrası yayın işinde; imza sırları main ve PR'larda runner'a hiç verilmiyor
+- install.sh sembolik bağlantılı paketi reddediyor ve kurulan uygulamayı yeniden doğruluyor; .gitignore .p8/.pem/.env dosyalarını kapsıyor
+
 ## [v2.5.1] - 2026-10-31
 
 _Doğrulama: yerel derleme geçti; CI'da 5/5 imza sırrı dolu; v2.5.0 Developer ID imzalı yerel derleme açılışta çökmüyor_
