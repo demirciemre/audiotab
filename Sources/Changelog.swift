@@ -16,6 +16,10 @@ struct ChangelogEntry {
 
 enum Changelog {
     static let entries: [ChangelogEntry] = [
+        ChangelogEntry(version: "2.5.1", items: [
+            ("İlk Developer ID ile imzalı ve notarize edilmiş indirilebilir sürüm",
+             "First downloadable release signed with Developer ID and notarized"),
+        ]),
         ChangelogEntry(version: "2.5.0", items: [
             ("Developer ID ile imzalı ve Apple tarafından notarize ediliyor: \"doğrulanamadı\" uyarısı yok, karantina silinmiyor",
              "Signed with Developer ID and notarized by Apple: no \"could not verify\" warning, quarantine is left alone"),

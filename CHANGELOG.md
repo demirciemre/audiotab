@@ -8,6 +8,7 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 ### Düzeltilenler
 
 - Sürüm etiketinde imza sırları eksikse CI artık kırmızı biter; imzasız sürüm sessizce yayınlanmaz
+- İndirilebilir AudioTab.zip artık Release'e ekleniyor: ilk imzalı ve notarize edilmiş sürüm (v2.5.0'da imza sırları eksikti)
 
 ## [v2.5.0] - 2026-10-31
 
