@@ -16,6 +16,14 @@ struct ChangelogEntry {
 
 enum Changelog {
     static let entries: [ChangelogEntry] = [
+        ChangelogEntry(version: "2.5.3", items: [
+            ("Liste görünümü fare tekerleği ve trackpad ile kayıyor",
+             "List view scrolls with the mouse wheel and the trackpad"),
+            ("Gruplu görünüm sığmayınca yana kayıyor; seçili kart ekran dışında kalmıyor",
+             "Grouped view scrolls sideways when it doesn't fit; the selected card never goes off screen"),
+            ("Ayarlar › Pencereler: \"Panel açık kalsın\" ile panelin ekran görüntüsü alınabiliyor (20 sn)",
+             "Settings › Windows: \"Keep the panel open\" lets you take a screenshot of the panel (20 s)"),
+        ]),
         ChangelogEntry(version: "2.5.2", items: [
             ("⌘Tab / ⌥Tab paneli daha hızlı açılıyor (60–95 ms); açılırken diğer tuşlar gecikmiyor",
              "The ⌘Tab / ⌥Tab panel opens faster (60–95 ms); other keys no longer lag while it opens"),
