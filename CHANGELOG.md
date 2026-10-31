@@ -5,6 +5,10 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+## [v2.5.3] - 2026-10-31
+
+_Doğrulama: yerel tür denetimi geçti; Liste/Gruplu kaydırma ve Panel açık kalsın yerel derlemede elle denendi_
+
 ### Eklenenler
 
 - Devir paketi: docs/handoff/upstream-2.4.2 (orijinal 2.4.2 üzerine yapılanlar, Apple hesabıyla ve hesapsız iki yol); tools/make_handoff.sh zip'i sır denetimiyle dist/ içine üretir
@@ -82,7 +86,8 @@ _Doğrulama: universal derleme (arm64+x86_64) yerelde ve CI'da geçti; Developer
 - install.sh karantinayı silmez; paketi Gatekeeper ve sabit Team ID ile denetler
 - CI artık hiçbir sertifikayı güvenilir kök olarak eklemiyor; action'lar commit SHA'sına sabitlendi
 
-[Unreleased]: https://github.com/demirciemre/audiotab/compare/v2.5.2...HEAD
+[Unreleased]: https://github.com/demirciemre/audiotab/compare/v2.5.3...HEAD
+[v2.5.3]: https://github.com/demirciemre/audiotab/compare/v2.5.2...v2.5.3
 [v2.5.2]: https://github.com/demirciemre/audiotab/compare/v2.5.1...v2.5.2
 [v2.5.1]: https://github.com/demirciemre/audiotab/compare/v2.5.0...v2.5.1
 [v2.5.0]: https://github.com/demirciemre/audiotab/releases/tag/v2.5.0
