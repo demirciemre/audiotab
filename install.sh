@@ -9,7 +9,7 @@
 set -euo pipefail
 REPO="demirciemre/audiotab"
 BUNDLE_ID="com.uniwebsolution.audiotab"
-TEAM_ID="__TEAM_ID__"   # Developer ID ekip kimliği (10 karakter); CI'daki TEAM_ID ile aynı
+TEAM_ID="ZUJ2KQLB2U"   # Developer ID ekip kimliği (10 karakter); CI'daki TEAM_ID ile aynı
 
 if ! [[ "$TEAM_ID" =~ ^[A-Z0-9]{10}$ ]]; then
   echo "✖ install.sh içinde TEAM_ID ayarlanmamış." >&2
