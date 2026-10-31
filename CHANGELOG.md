@@ -11,7 +11,7 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ### Düzeltilenler
 
-- Güncelleyici, AudioTab.zip'i henüz eklenmemiş sürümü önermiyor (notarize sürerken "İndirme başarısız (404)" görünmüyordu)
+- Güncelleyici, AudioTab.zip'i henüz eklenmemiş sürümü önermiyor (notarize sürerken "İndirme başarısız (404)" hatası çıkıyordu)
 
 ## [v2.5.3] - 2026-10-31
 
