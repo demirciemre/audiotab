@@ -619,6 +619,33 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     return swallow ? nil : Unmanaged.passUnretained(event)
 }
 
+/// Ekran görüntüsü için: açıkken ⌘/⌥ bırakılınca panel kapanmaz ve ekran görüntülerinde görünür.
+/// Kaydedilmez. Açıldıktan ya da panel son açıldıktan 20 sn sonra kendiliğinden kapanır, açık panel de kapanır.
+enum HoldOpen {
+    static let seconds: TimeInterval = 20
+    static let changed = Notification.Name("HoldOpen.changed")
+    private(set) static var isOn = false
+    private static var timer: DispatchWorkItem?
+    /// Kapanınca çağrılır: tutulan paneli kapatmak için
+    static var onOff: () -> Void = {}
+
+    static func set(_ on: Bool) {
+        timer?.cancel(); timer = nil
+        isOn = on
+        if on { restart() } else { onOff() }
+        NotificationCenter.default.post(name: changed, object: nil)
+    }
+
+    /// Süreyi baştan başlat (panel her açıldığında)
+    static func restart() {
+        guard isOn else { return }
+        timer?.cancel()
+        let w = DispatchWorkItem { set(false) }
+        timer = w
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: w)
+    }
+}
+
 @MainActor final class Switcher {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
@@ -664,6 +691,9 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
 
     init() {
         if let f = NSWorkspace.shared.frontmostApplication { mru = [f.processIdentifier] }
+        HoldOpen.onOff = { [weak self] in
+            MainActor.assumeIsolated { if let self, self.holding { self.end() } }
+        }
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] n in
             guard let pid = (n.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier else { return }
@@ -758,7 +788,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
             return false
         case .flagsChanged:
-            if active && !flags.contains(profile.flag) { commit() }
+            if active && !holding && !flags.contains(profile.flag) { commit() }
             return false
         case .keyDown:
             let shift = flags.contains(.maskShift)
@@ -781,6 +811,8 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                 return false
             }
             guard active else { return false }
+            // Panel açık tutulurken ⌘⇧3/4/5 gibi ekran görüntüsü kısayolları geçsin
+            if holding, flags.contains(.maskCommand), flags.contains(.maskShift) { return false }
             switch key {
             case 53: end()                              // Esc
             case 123: horizontal(-1)                    // ←
@@ -806,6 +838,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
             // Panel açıkken kartların dışına (boşluğa ya da panelin dışına) tıklanınca kapat
             guard active else { return false }
             if ui.hitsCard(NSEvent.mouseLocation) == true { return false }   // karta tıklama: kart kendisi işler
+            if holding { return false }   // ekran görüntüsü alanı seçilirken panel kapanmasın
             end()
             return true
         default:
@@ -824,12 +857,17 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     private var revealDue = false
     private var pendingSteps = 0
     private var pendingCommit = false
+    /// "Panel açık kalsın": ⌘/⌥ bırakılınca kapanmaz (Esc, ↩ ya da süre dolunca kapanır)
+    private var holding = false
 
     private func begin(reverse: Bool) {
         let t0 = perfNow()
         if SecureInput.isOn { perfLog.notice("begin with secure input on") }
         active = true
         built = false; revealDue = false; pendingSteps = 0; pendingCommit = false
+        holding = HoldOpen.isOn
+        if holding { HoldOpen.restart() }
+        ui.capturable = holding
         // Çok hızlı Cmd+Tab'da (60 ms altı) panel hiç çizilmez, anında geçer.
         let work = DispatchWorkItem { [weak self] in
             MainActor.assumeIsolated {
@@ -1037,6 +1075,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
 
     private func end() {
         active = false
+        holding = false
         built = false; revealDue = false; pendingSteps = 0; pendingCommit = false
         showWork?.cancel(); showWork = nil
         captureTask?.cancel(); captureTask = nil
@@ -1176,6 +1215,8 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     private let onExit: (Int) -> Void
     private let onClick: (Int) -> Void
     var isVisible: Bool { panel.isVisible }
+    /// true: panel ekran görüntülerinde görünür ("Panel açık kalsın" açıkken)
+    var capturable = false { didSet { panel.sharingType = capturable ? .readOnly : .none } }
 
     // Liste görünümünde ekrana sığmayan uzun listeler için kayan pencere
     private var lastItems: [Item] = []
@@ -1300,7 +1341,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         if listMode {
             layoutList(items, selected: selected, screen: screen)
         } else if groupedMode {
-            layoutGrouped(items, thumbs: thumbs, screen: screen)
+            layoutGrouped(items, selected: selected, thumbs: thumbs, screen: screen)
         } else {
             layoutGrid(items, selected: selected, thumbs: thumbs, screen: screen)
         }
@@ -1321,7 +1362,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: false)
     }
 
-    /// Izgarada görünen ilk satır (tüm pencereler sığmadığında seçimle birlikte kayar)
+    /// Görünen ilk satır (ızgara, liste) ya da sütun (gruplu); tümü sığmadığında seçimle ya da fareyle kayar
     private var firstRow = 0
     /// Önizlemeler bundan küçülmez; daha fazla pencere varsa panel kendi içinde kayar
     static let minGridThumbH: CGFloat = 130
@@ -1415,10 +1456,13 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         }
     }
 
-    /// Fare/trackpad ile panelin içinde satır satır kaydır (yalnızca ızgara taşınca)
+    /// Fare/trackpad ile panelin içinde kaydır: ızgara ve listede satır satır,
+    /// gruplu görünümde sütun sütun (dikey tekerlek de yana kaydırır)
     private func scrolled(_ e: NSEvent) {
-        guard !listMode, !groupedMode, e.window === panel, !lastItems.isEmpty else { return }
-        scrollAccum += e.hasPreciseScrollingDeltas ? e.scrollingDeltaY / 40 : e.scrollingDeltaY
+        guard e.window === panel, !lastItems.isEmpty else { return }
+        let dx = e.scrollingDeltaX, dy = e.scrollingDeltaY
+        let raw = groupedMode && abs(dx) > abs(dy) ? dx : dy
+        scrollAccum += e.hasPreciseScrollingDeltas ? raw / 40 : raw
         guard abs(scrollAccum) >= 1 else { return }
         let d = scrollAccum > 0 ? -1 : 1   // içerik yukarı itilince alttaki satırlar gelir
         scrollAccum = 0
@@ -1433,7 +1477,9 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     /// Toplam genişlik ekrana sığmazsa önizlemeler küçültülür.
     private var columns: [[Int]] = []
     static let cardsPerColumn = 2
-    private func layoutGrouped(_ items: [Item], thumbs: [CGWindowID: CGImage], screen: NSScreen) {
+    /// Gruplu görünümde önizlemeler bundan küçülmez; sığmayan sütunlar yana kayar
+    static let minGroupedThumbH: CGFloat = 110
+    private func layoutGrouped(_ items: [Item], selected: Int, thumbs: [CGWindowID: CGImage], screen: NSScreen) {
         let vf = screen.visibleFrame
         let scale = screen.backingScaleFactor
         let maxW = (vf.width * 0.94 - pad * 2 - sideExtra).rounded(.down)
@@ -1452,7 +1498,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         thumbH = preparedThumbH   // her çizimde hazırlanan boydan başla (art arda küçülmesin)
         // Sığana kadar önizleme boyunu küçült
         for attempt in 0..<8 {
-            if attempt > 0 { thumbH = max(80, (thumbH * 0.86).rounded()) }
+            if attempt > 0 { thumbH = max(Self.minGroupedThumbH, (thumbH * 0.86).rounded()) }
             let maxColH = vf.height * 0.86 - pad * 2 - headerH - groupHeaderH
             laid.removeAll(); widths.removeAll()
             for s in sections {
@@ -1475,15 +1521,40 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
             let secW = laid.map { sec in sec.cols.reduce(0) { $0 + $1.w } + CGFloat(max(0, sec.cols.count - 1)) * colGap }
             totalW = secW.reduce(0, +) + CGFloat(max(0, laid.count - 1)) * secGap
             bodyH = laid.flatMap { $0.cols }.map { $0.h }.max() ?? cellH
-            if totalW <= maxW || thumbH <= 80 || !previews { break }
+            if totalW <= maxW || thumbH <= Self.minGroupedThumbH || !previews { break }
         }
 
-        // Sığmayan sütunlar kırpılır (çok nadir: çok fazla pencere)
-        columns = laid.flatMap { $0.cols.map { $0.idx } }
+        // Sütunlar sırayla: (bölüm, sütun). Hepsi sığmazsa seçili sütunu gösterecek pencere kadarı çizilir
+        let flat = laid.enumerated().flatMap { k, s in s.cols.map { (sec: k, col: $0) } }
+        columns = flat.map { $0.col.idx }
         rows = columns                       // ↑↓ sütun içinde, ←→ sütunlar arası (bkz. neighbor)
-        visibleRange = 0..<items.count
+        func span(_ a: Int, _ b: Int) -> CGFloat {
+            var w: CGFloat = 0
+            for j in a..<b { w += flat[j].col.w + (j > a ? (flat[j].sec == flat[j - 1].sec ? colGap : secGap) : 0) }
+            return w
+        }
+        func fitEnd(from a: Int) -> Int {
+            var b = a + 1
+            while b < flat.count, span(a, b + 1) <= maxW { b += 1 }
+            return b
+        }
+        var lo = 0, hi = flat.count
+        if totalW > maxW, !flat.isEmpty {
+            let selCol = columns.firstIndex { $0.contains(selected) } ?? 0
+            if followSelection, selCol < firstRow { firstRow = selCol }
+            firstRow = min(max(0, firstRow), flat.count - 1)
+            hi = fitEnd(from: firstRow)
+            if followSelection { while selCol >= hi { firstRow += 1; hi = fitEnd(from: firstRow) } }
+            // Sona gelindiyse soldan doldur: sağda boşluk kalmasın
+            while firstRow > 0, span(firstRow - 1, hi) <= maxW { firstRow -= 1 }
+            lo = firstRow
+        } else {
+            firstRow = 0
+        }
+        let visW = flat.isEmpty ? 0 : span(lo, hi)
+        visibleRange = flat.isEmpty ? 0..<0 : (flat[lo].col.idx.first ?? 0)..<((flat[hi - 1].col.idx.last ?? -1) + 1)
 
-        let cw = max(min(totalW, maxW) + pad * 2, minWidthForBar - sideExtra, 300).rounded()
+        let cw = max(visW + pad * 2, minWidthForBar - sideExtra, 300).rounded()
         let w = cw + sideExtra
         let h = max(bodyH + groupHeaderH + pad * 2 + headerH, sideMinH(screen)).rounded()
         place(w, h, in: screen)
@@ -1491,10 +1562,14 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         placeSidebar(cw: cw, h: h)
 
         let mode: CellMode = previews ? .preview : .icon
-        var x = pad + max(0, (cw - pad * 2 - totalW) / 2)
+        var x = pad + max(0, (cw - pad * 2 - visW) / 2)
         let top = h - pad - headerH
-        for (k, s) in laid.enumerated() {
-            if k > 0 {
+        var j = lo
+        while j < hi {
+            let k = flat[j].sec
+            var e = j
+            while e < hi, flat[e].sec == k { e += 1 }
+            if j > lo {
                 // Bölüm ayırıcı: ince dikey çizgi
                 let line = NSView(frame: NSRect(x: (x - secGap / 2).rounded(), y: pad, width: 1, height: top - pad))
                 line.wantsLayer = true
@@ -1502,13 +1577,13 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                 glass.addSubview(line)
                 headerViews.append(line)
             }
-            let secW = s.cols.reduce(0) { $0 + $1.w } + CGFloat(max(0, s.cols.count - 1)) * colGap
-            let hv = Self.groupHeader(s.group, count: s.count)
+            let secW = span(j, e)
+            let hv = Self.groupHeader(laid[k].group, count: laid[k].count)
             hv.frame = NSRect(x: x + 2, y: top - groupHeaderH + 3, width: max(secW, 120), height: groupHeaderH - 4)
             glass.addSubview(hv)
             headerViews.append(hv)
             var cx = x
-            for col in s.cols {
+            for col in flat[j..<e].map(\.col) {
                 var y = top - groupHeaderH
                 for i in col.idx {
                     y -= cellH
@@ -1527,19 +1602,31 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                 cx += col.w + colGap
             }
             x += secW + secGap
+            j = e
+        }
+        placeSideHints(left: visibleRange.lowerBound, right: items.count - visibleRange.upperBound, cw: cw)
+    }
+
+    /// Gruplu görünüm yana kayınca alt köşelerde kaç pencere daha olduğu (ör. "6 pencere daha →")
+    private func placeSideHints(left: Int, right: Int, cw: CGFloat) {
+        for (label, n, isLeft) in [(moreAbove, left, true), (moreBelow, right, false)] {
+            guard n > 0 else { label.removeFromSuperview(); continue }
+            label.stringValue = isLeft ? "← " + L("%d pencere daha", n) : L("%d pencere daha", n) + " →"
+            label.font = .systemFont(ofSize: 11, weight: .medium)
+            label.textColor = .white.withAlphaComponent(0.6)
+            label.alignment = isLeft ? .left : .right
+            label.frame = NSRect(x: pad, y: 3, width: cw - pad * 2, height: 15)
+            if label.superview == nil { glass.addSubview(label) }
         }
     }
 
     /// Gruplu görünümde ←→: komşu sütunda dikeyde en yakın kart
+    /// (kartlar sütunun üstünden dizildiği için aynı sıradaki kart; komşu sütun ekran dışında olabilir)
     func columnNeighbor(of i: Int, delta: Int) -> Int? {
         guard groupedMode, let c = columns.firstIndex(where: { $0.contains(i) }), columns.indices.contains(c + delta),
-              let me = cells.first(where: { $0.index == i }) else { return nil }
-        let my = me.frame.midY
-        return columns[c + delta].min { a, b in
-            let fa = cells.first { $0.index == a }?.frame.midY ?? 0
-            let fb = cells.first { $0.index == b }?.frame.midY ?? 0
-            return abs(fa - my) < abs(fb - my)
-        }
+              let k = columns[c].firstIndex(of: i) else { return nil }
+        let next = columns[c + delta]
+        return next.isEmpty ? nil : next[min(k, next.count - 1)]
     }
 
     /// Bölüm başlığı: simge + BÜYÜK HARF ad + sayı
@@ -1563,11 +1650,16 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         let scale = screen.backingScaleFactor
         let maxRows = max(1, Int((vf.height * 0.8 - pad * 2 - headerH + listGap) / (listRowH + listGap)))
         let count = min(items.count, maxRows)
-        var start = 0
         if items.count > count {
-            start = min(max(0, selected - count / 2), items.count - count)
+            if followSelection, selected >= 0 {
+                if selected < firstRow { firstRow = selected }
+                if selected >= firstRow + count { firstRow = selected - count + 1 }
+            }
+            firstRow = min(max(0, firstRow), items.count - count)
+        } else {
+            firstRow = 0
         }
-        visibleRange = start..<(start + count)
+        visibleRange = firstRow..<(firstRow + count)
         rows = visibleRange.map { [$0] }
 
         let cw = max(min(640, (vf.width * 0.9).rounded()), min(minWidthForBar - sideExtra, (vf.width * 0.9).rounded()))
@@ -1586,6 +1678,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                                 profile: profileFor?(items[i]))
             add(cell)
         }
+        placeMoreHints(above: visibleRange.lowerBound, below: items.count - visibleRange.upperBound, cw: cw, h: h)
     }
 
     private func add(_ cell: ItemCell) {
@@ -1626,8 +1719,8 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
 
     func setSelected(_ i: Int) {
         lastSelected = i
-        // Liste ve ızgarada seçim görünen aralığın dışına çıktıysa kaydır
-        if listMode || !groupedMode, i >= 0, !visibleRange.contains(i), panel.isVisible, lastItems.indices.contains(i) {
+        // Seçim görünen aralığın dışına çıktıysa kaydır
+        if i >= 0, !visibleRange.contains(i), panel.isVisible, lastItems.indices.contains(i) {
             show(lastItems, selected: i, thumbs: lastThumbs)
             return
         }

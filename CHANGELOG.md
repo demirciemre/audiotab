@@ -8,10 +8,16 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 ### Eklenenler
 
 - Devir paketi: docs/handoff/upstream-2.4.2 (orijinal 2.4.2 üzerine yapılanlar, Apple hesabıyla ve hesapsız iki yol); tools/make_handoff.sh zip'i sır denetimiyle dist/ içine üretir
+- Ayarlar › Pencereler › Ekran görüntüsü için › Panel açık kalsın: ⌘Tab / ⌥Tab paneli tuş bırakılınca kapanmaz, ekran görüntülerinde görünür; 20 sn sonra kendiliğinden kapanır
 
 ### Değişenler
 
 - README İngilizce (README.md), Türkçesi README.tr.md; görseller iki dilde üretiliyor (docs/images/en, docs/images/tr)
+
+### Düzeltilenler
+
+- Pencere paneli, Liste görünümü: fare tekerleği ve trackpad ile aşağı/yukarı kaydırılıyor; kenarda kaç pencere daha olduğu yazıyor
+- Pencere paneli, Gruplu görünüm: bölümler ekrana sığmayınca sütunlar yana kayıyor (tekerlek, trackpad, Tab, oklar); seçili kart artık ekran dışında kalmıyor
 
 ## [v2.5.2] - 2026-10-31
 

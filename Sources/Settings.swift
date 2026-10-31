@@ -454,6 +454,12 @@ struct SettingsView: View {
             }
         }
         if Profile.allCases.contains(where: { $0.grouped && !$0.list }) { groupedCard }
+        Card(title: L("Ekran görüntüsü için"), icon: "camera.viewfinder") {
+            ToggleRow(L("Panel açık kalsın"),
+                      L("⌘Tab / ⌥Tab paneli tuşlar bırakılınca kapanmaz ve ekran görüntülerinde görünür; Esc ya da ↩ ile kapanır. 20 sn içinde panel açılmazsa ya da panel 20 sn açık kalınca kendiliğinden kapanır."),
+                      isOn: model.bind({ HoldOpen.isOn }, { HoldOpen.set($0) }))
+                .onReceive(NotificationCenter.default.publisher(for: HoldOpen.changed)) { _ in model.refresh() }
+        }
         Card(title: L("Fare"), icon: "computermouse") {
             ToggleRow(L("Finder'da yan tuşlarla geri / ileri"),
                       L("Farenin 4. ve 5. tuşları Finder öndeyken klasörlerde geri ve ileri gider"),
