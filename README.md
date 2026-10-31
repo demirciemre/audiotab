@@ -1,129 +1,131 @@
 <div align="center">
-  <img src="docs/images/icon.png" width="160" height="160" alt="AudioTab simgesi">
+  <img src="docs/images/icon.png" width="160" height="160" alt="AudioTab icon">
   <h1>AudioTab</h1>
-  <p><b>⌘Tab'ı pencere pencere yeniden düşünen, sesi tek tuşla değiştiren, ekranı bölen menü çubuğu uygulaması.</b></p>
+  <p><b>A menu bar app that rethinks ⌘Tab window by window, switches sound output with one key, and tiles your screen.</b></p>
 
-  <a href="https://github.com/demirciemre/audiotab/releases/latest"><img src="https://img.shields.io/badge/indir-son%20sürüm-6366f1?style=flat-square" alt="İndir"></a>
+  <a href="https://github.com/demirciemre/audiotab/releases/latest"><img src="https://img.shields.io/badge/download-latest-6366f1?style=flat-square" alt="Download"></a>
   <img src="https://img.shields.io/badge/macOS-13%2B-blue?style=flat-square" alt="macOS 13+">
-  <img src="https://img.shields.io/badge/Apple-notarize%20edildi-000000?style=flat-square&logo=apple" alt="Notarize edildi">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/demirciemre/audiotab?style=flat-square" alt="Lisans"></a>
+  <img src="https://img.shields.io/badge/Apple-notarized-000000?style=flat-square&logo=apple" alt="Notarized">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/demirciemre/audiotab?style=flat-square" alt="License"></a>
+
+  <p><b>English</b> · <a href="README.tr.md">Türkçe</a></p>
 
   <p>
-    <a href="#pencere-geçişi">Pencere geçişi</a> ·
-    <a href="#ses">Ses</a> ·
-    <a href="#ekranı-böl">Ekranı böl</a> ·
-    <a href="#ekran-görüntüsü-ve-kayıt">Ekran görüntüsü</a> ·
-    <a href="#harici-monitörler">Monitörler</a> ·
-    <a href="#kurulum">Kurulum</a>
+    <a href="#window-switching">Window switching</a> ·
+    <a href="#sound">Sound</a> ·
+    <a href="#screen-tiling">Tiling</a> ·
+    <a href="#screenshots-and-recording">Screenshots</a> ·
+    <a href="#external-displays">Displays</a> ·
+    <a href="#install">Install</a>
   </p>
 </div>
 
-![AudioTab ⌥Tab paneli: açık pencerelerin canlı önizlemeleri](docs/images/hero.webp)
+![AudioTab's ⌥Tab panel: live previews of open windows](docs/images/en/hero.webp)
 
 > [!NOTE]
-> Görseller özellikleri anlatmak için çizilmiş temsili ekranlardır. Uygulama adları ve simgeler geneldir.
+> The images are drawn illustrations of each feature, not screenshots. App names and icons are generic.
 
-## Pencere geçişi
+## Window switching
 
-### Uygulama değil, pencere
+### Windows, not apps
 
-⌘Tab, açık her pencereyi ayrı bir kart olarak gösterir: diğer masaüstlerindekiler, tam ekrandakiler ve tarayıcı profilleri dahil. ⌘ basılıyken Tab ile ilerleyin, bırakınca o pencere öne gelir. Panel tuşa basıldıktan 60–95 ms sonra ekrandadır; çok hızlı bir ⌘Tab'da hiç çizilmeden geçer.
+⌘Tab shows every open window as its own card, including windows on other desktops, full-screen windows and separate browser profiles. Hold ⌘ and press Tab to move along; release to bring that window forward. The panel is on screen 60–95 ms after the key press, and a very quick ⌘Tab switches without drawing it at all.
 
-![⌘Tab paneli: pencere başına bir kart, tarayıcı profili ve ses cihazı rozetleri](docs/images/cmd-tab.webp)
+![⌘Tab panel: one card per window, with browser profile and sound device badges](docs/images/en/cmd-tab.webp)
 
-### Canlı önizlemeler
+### Live previews
 
-⌥Tab aynı geçişi pencerelerin canlı önizlemeleriyle yapar. Pencere çoksa önizlemeler okunur bir boyutta kalır ve panel kendi içinde kayar: Tab ile ya da trackpad ile. Kenardaki yazı yukarıda ve aşağıda kaç pencere daha olduğunu söyler.
+⌥Tab does the same with live previews of each window. With many windows, the previews stay at a readable size and the panel scrolls inside itself, with Tab or the trackpad. A line at the edge tells you how many windows are above or below.
 
-![⌥Tab paneli: önizlemeler, üstte ve altta "pencere daha" işareti](docs/images/opt-tab-scroll.webp)
+![⌥Tab panel: previews with "more windows" hints at the top and bottom](docs/images/en/opt-tab-scroll.webp)
 
-### Gruplu görünüm
+### Grouped view
 
-Pencereler Tarayıcılar, Projeler, Geliştirme, Uygulamalar ve Klasörler sütunlarında toplanır. Proje uygulamalarında (video, tasarım, müzik yazılımları) pencere başlığından proje adı okunur. Listede olmayan uygulamaları Projeler'e siz ekleyebilirsiniz.
+Windows are arranged in Browsers, Projects, Development, Apps and Folders columns. For project apps (video, design and music software), the project name is read from the window title. You can add apps that aren't on the list to Projects.
 
-![Gruplu görünüm: beş sütunda pencereler](docs/images/grouped.webp)
+![Grouped view: windows in five columns](docs/images/en/grouped.webp)
 
-### Filtre ve favoriler
+### Filter and favorites
 
-Üstteki çubuktan tek bir uygulamanın pencerelerine daraltın (F ve A). Sağdaki kenar çubuğu sık kullandığınız klasörleri ve Finder favorilerini tek tıkla açar.
+Narrow the panel to one app's windows from the bar at the top (F and A). The sidebar on the right opens your frequent folders and Finder favorites in one click.
 
-![Uygulama filtresi ve favori klasörler kenar çubuğu](docs/images/filter-sidebar.webp)
+![App filter and favorite folders sidebar](docs/images/en/filter-sidebar.webp)
 
-### Panelden yönetin
+### Manage from the panel
 
-Panel açıkken pencereyi kapatın, küçültün, gizleyin, uygulamadan çıkın ya da ses cihazını değiştirin. Fareyi kullanmanız gerekmez.
+While the panel is open, close, minimize or hide a window, quit an app, or change its sound device, all without the mouse.
 
-![Panel kısayolları: Tab, ⇧Tab, oklar, ↩, W, M, H, Q, S, F, A, Esc](docs/images/panel-keys.webp)
+![Panel shortcuts: Tab, ⇧Tab, arrows, ↩, W, M, H, Q, S, F, A, Esc](docs/images/en/panel-keys.webp)
 
-## Ses
+## Sound
 
-### Tek tuşla ses çıkışı
+### Sound output with one key
 
-⌘ basılıyken ⇧'ye dokunun: ses sıradaki cihaza geçer (dilerseniz ⌘⇪). Çıkardığınız kulaklığı hatırlar, takınca geri döner.
+Hold ⌘ and tap ⇧: sound moves to the next device (or use ⌘⇪ instead). AudioTab remembers headphones you unplug and switches back when you plug them in.
 
-![Ses çıkışı değişti bildirimi ve sıralı cihaz listesi](docs/images/audio-switch.webp)
+![Sound output changed notice and the device list in order](docs/images/en/audio-switch.webp)
 
-### Uygulamaya göre ses cihazı
+### Sound device per app
 
-Her uygulamaya bir ses cihazı atayın: müzik hoparlörden, görüntülü görüşme kulaklıktan. Atama ⌘Tab kartında rozet olarak görünür, panelde S ile değişir.
+Give each app its own sound device: music on the speakers, video calls on the headphones. The assignment shows as a badge on the ⌘Tab card and changes with S in the panel.
 
-![Uygulama ve ses cihazı eşleşmeleri, kartta ses rozeti](docs/images/per-app-audio.webp)
+![App to sound device assignments, with the sound badge on a card](docs/images/en/per-app-audio.webp)
 
-## Ekranı böl
+## Screen tiling
 
-⌘< ile seçici açılır: 9 düzenden birini seçin, pencereleri bölmelere yerleştirin. Birden fazla monitörde hedef ekranı Tab ile değiştirirsiniz. Her ekranda büyük bir numara hangisinin hedef olduğunu gösterir.
+⌘< opens the picker: choose one of 9 layouts and place windows into its zones. With several displays, Tab changes the target display, and a large number on each screen shows which one is the target.
 
-![Ekran bölme seçicisi: 9 düzen, monitör seçimi ve sonuç](docs/images/tiling.webp)
+![Tiling picker: 9 layouts, display choice and the result](docs/images/en/tiling.webp)
 
-## Ekran görüntüsü ve kayıt
+## Screenshots and recording
 
-⌘⇧3 imlecin bulunduğu ekranı, ⌘⇧4 bir alanı yakalar. ⌘⇧5 paleti açar; MP4 (H.264), H.265 ya da ProRes 4444 kayıt alır.
+⌘⇧3 captures the screen under the pointer, ⌘⇧4 an area. ⌘⇧5 opens the palette and records MP4 (H.264), H.265 or ProRes 4444.
 
-![Alan seçimi ve kayıt paleti](docs/images/capture.webp)
+![Area selection and the recording palette](docs/images/en/capture.webp)
 
-### Kaydırmalı ekran görüntüsü
+### Scrolling screenshots
 
-⌘⇧6 ile sayfayı kaydırın, AudioTab parçaları tek uzun bir görüntüde birleştirir.
+Press ⌘⇧6 and scroll the page; AudioTab stitches the pieces into one long image.
 
-![Kaydırılan pencere ve birleştirilmiş uzun ekran görüntüsü](docs/images/scrolling.webp)
+![A scrolled window and the stitched long screenshot](docs/images/en/scrolling.webp)
 
-## Harici monitörler
+## External displays
 
-Harici monitörlerin parlaklığını ve sesini DDC/CI ile menü çubuğundan ayarlayın. ⌘⇧< harici ekranları tamamen karartır; isterseniz o sırada klavye de kilitlenir.
+Set the brightness and volume of external displays over DDC/CI from the menu bar. ⌘⇧< blacks out the external displays completely, and can lock the keyboard while they're dark.
 
-![Monitör 1'de parlaklık ve ses kaydırıcıları, Monitör 2 karartılmış](docs/images/displays.webp)
+![Brightness and volume sliders on Display 1, Display 2 blacked out](docs/images/en/displays.webp)
 
-## Küçük ama kullanışlı
+## Small but handy
 
-Farenin yan tuşları Finder'da geri ve ileri gider. Bir dosyayı Dock'taki uygulamanın üstüne getirdiğinizde uygulama beklemeden öne gelir.
+The mouse side buttons go back and forward in Finder. Hold a file over an app in the Dock and the app comes forward right away.
 
-![Finder'da fare ile geri/ileri ve Dock'a sürükle-bırak](docs/images/finder-dock.webp)
+![Back/forward with the mouse in Finder, and drag to Dock](docs/images/en/finder-dock.webp)
 
-Bir uygulama klavyeyi güvenli giriş moduna aldığında (parola alanları, Terminal'in güvenli klavye girişi) macOS tuşları her uygulamadan gizler. AudioTab bunu fark eder, ⌘Tab'ı geçici olarak macOS'a bırakır ve kilit kalkınca geri alır.
+When an app turns on secure input (password fields, Terminal's secure keyboard entry), macOS hides keystrokes from every app. AudioTab notices, hands ⌘Tab back to macOS for the moment, and takes it back when the lock lifts.
 
-![Güvenli giriş bildirimi](docs/images/secure-input.webp)
+![Secure input notice](docs/images/en/secure-input.webp)
 
-## Ayarlar
+## Settings
 
-Ses, Pencereler, Ekran, İzinler, Genel ve Sürümler sekmeleri. İzinler sekmesi neyin eksik olduğunu ve neden gerektiğini gösterir.
+Sound, Windows, Screen, Permissions, General and Versions tabs. The Permissions tab shows what's missing and why it's needed.
 
-![Ayarlar penceresi, İzinler sekmesi](docs/images/settings.webp)
+![Settings window, Permissions tab](docs/images/en/settings.webp)
 
-## Güvenle kurulur, güvenle güncellenir
+## Installs safely, updates safely
 
-AudioTab Apple Developer ID ile imzalı ve Apple tarafından notarize edilmiş olarak dağıtılır. "Apple could not verify…" uyarısı çıkmaz. Güncellemeler yalnızca GitHub'dan, yalnızca HTTPS ile iner ve kurulmadan önce imzası, Team ID'si ve notarize durumu doğrulanır.
+AudioTab ships signed with an Apple Developer ID and notarized by Apple, so there is no "Apple could not verify…" warning. Updates come only from GitHub, only over HTTPS, and their signature, Team ID and notarization are checked before they're installed.
 
-![Gatekeeper uyarısız açılış ve doğrulanmış güncelleme](docs/images/trusted-updates.webp)
+![Opening without a Gatekeeper warning, and a verified update](docs/images/en/trusted-updates.webp)
 
-## Kurulum
+## Install
 
-### Elle
+### Manually
 
-[Son sürümden](https://github.com/demirciemre/audiotab/releases/latest) `AudioTab.zip` dosyasını indirin, açın ve `AudioTab.app`'i **Uygulamalar** klasörüne taşıyın.
+Download `AudioTab.zip` from the [latest release](https://github.com/demirciemre/audiotab/releases/latest), unzip it, and move `AudioTab.app` to your **Applications** folder.
 
-### Komut satırından
+### From the command line
 
-Betik önce indirilir, okuyabilirsiniz, sonra çalıştırılır. Apple imzasını ve Team ID'yi denetler, karantina bayrağına dokunmaz.
+The script is downloaded first so you can read it, then run. It checks the Apple signature and Team ID and leaves the quarantine flag alone.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/demirciemre/audiotab/main/install.sh -o install.sh
@@ -133,56 +135,56 @@ curl -fsSL https://raw.githubusercontent.com/demirciemre/audiotab/main/install.s
 bash install.sh
 ```
 
-### Kaynaktan
+### From source
 
-Xcode komut satırı araçları yeterlidir. Yerelde derlenen kopya kendini güncellemez; `git pull` ile kodu çekip yeniden derleyerek güncellenir.
+The Xcode command line tools are enough. A locally built copy doesn't update itself; pull the code with `git pull` and build again.
 
 ```sh
 ./build.sh --install
 ```
 
-### İlk açılış
+### First launch
 
-1. **Sistem Ayarları › Gizlilik ve Güvenlik** altında **Erişilebilirlik** ve **Ekran Kaydı** izinlerini verin. Ekran Kaydı'ndan sonra uygulamayı bir kez kapatıp açın.
-2. AudioTab Dock'ta görünmez; ayarlara menü çubuğundaki simgesinden ulaşılır.
+1. In **System Settings › Privacy & Security**, allow **Accessibility** and **Screen Recording**. After granting Screen Recording, quit and reopen the app once.
+2. AudioTab has no Dock icon; open its settings from the menu bar icon.
 
-## Neden bu sürüm?
+## Why this version?
 
-AudioTab, [debelemez/AudioTab](https://github.com/debelemez/AudioTab) (MIT) temel alınarak bağımsız olarak geliştiriliyor. Özellikler aynı, fark güven zincirinde:
+AudioTab is developed independently, based on [debelemez/AudioTab](https://github.com/debelemez/AudioTab) (MIT). The features are the same; the difference is the chain of trust:
 
-| | Özgün | AudioTab (bu repo) |
+| | Original | AudioTab (this repo) |
 |---|---|---|
-| İmza | Kendinden imzalı sertifika | Apple **Developer ID**, hardened runtime, güvenli zaman damgası |
-| Gatekeeper | "Apple could not verify…" uyarısı; karantina `xattr` ile siliniyor | **Notarize** edilmiş ve bileti zımbalanmış; uyarısız açılır |
-| Güncelleme doğrulaması | Sabit SHA-1 parmak izi | Apple köküne bağlı Developer ID, aynı Team ID, `notarized` şartı, iptal denetimi |
-| Ağ | `URLSession.shared` | Çerezsiz ve önbelleksiz oturum, yalnızca GitHub, yalnızca HTTPS (TLS 1.2+) |
-| CI | Sertifika sisteme `trustRoot` olarak ekleniyor | Hiçbir kök eklenmez; anahtarlar yalnızca sürüm etiketinde açılır; action'lar SHA'ya sabit |
-| Kurulum | `curl … \| bash`, karantina siliniyor | İndir, oku, çalıştır; `spctl` ve Team ID denetimi |
+| Signature | Self-signed certificate | Apple **Developer ID**, hardened runtime, secure timestamp |
+| Gatekeeper | "Apple could not verify…" warning; quarantine removed with `xattr` | **Notarized** with a stapled ticket; opens without a warning |
+| Update check | Pinned SHA-1 fingerprint | Developer ID chained to Apple's root, same Team ID, `notarized` requirement, revocation check |
+| Network | `URLSession.shared` | Session without cookies or cache, GitHub only, HTTPS only (TLS 1.2+) |
+| CI | Adds the certificate to the system as `trustRoot` | No root is added; keys are unlocked only on release tags; actions pinned to SHAs |
+| Install | `curl … \| bash`, quarantine removed | Download, read, run; `spctl` and Team ID check |
 
-Güvenlik denetiminin özeti: [docs/security-audit.md](docs/security-audit.md).
+Security audit summary: [docs/security-audit.md](docs/security-audit.md).
 
-## Gizlilik
+## Privacy
 
-- Basılan tuşlar kaydedilmez ve saklanmaz. Tuş yakalayıcı yalnızca tuş kodunu ve değiştirici tuşları okur.
-- Ekran görüntüsü yalnızca siz bir kısayola bastığınızda alınır. AudioTab'ın kendi panelleri ekran paylaşımında görünmez.
-- Uygulama yalnızca güncelleme kontrolü için GitHub'a bağlanır.
+- Keystrokes are never logged or stored. The key listener reads only the key code and modifier keys.
+- Screenshots are taken only when you press a shortcut. AudioTab's own panels don't appear in screen sharing.
+- The app only connects to GitHub, to check for updates.
 
-## Gereksinimler
+## Requirements
 
-macOS 13 ve üstü, Apple Silicon ve Intel. Pencere önizlemeleri ScreenCaptureKit'in ekran görüntüsü API'si nedeniyle macOS 14 gerektirir; macOS 13'te panel simgelerle açılır.
+macOS 13 or later, Apple silicon and Intel. Window previews need macOS 14 because of ScreenCaptureKit's screenshot API; on macOS 13 the panel opens with icons.
 
-## Geliştirme
+## Development
 
 ```sh
-./build.sh              # Apple Silicon için derler
-./build.sh --universal  # Apple Silicon + Intel
-./build.sh --install    # derler, /Applications'a kurar ve açar
+./build.sh              # build for Apple silicon
+./build.sh --universal  # Apple silicon + Intel
+./build.sh --install    # build, install to /Applications and open
 ```
 
-- Simge [Icon/AppIcon.icon](Icon/AppIcon.icon) içinde Icon Composer dosyası olarak durur. `tools/make_icon.sh` derler, `tools/icon_review.sh` tüm görünümleri gösterir. Web ve doküman için SVG halleri (renkli, tek renk siyah/beyaz ve `currentColor`) [docs/brand](docs/brand) klasöründe.
-- README görselleri [tools/readme-art](tools/readme-art) içindeki sahnelerden üretilir: `tools/readme-art/render.sh`.
-- Değişiklikler [CHANGELOG.md](CHANGELOG.md) içinde `[Unreleased]` altında birikir. Sürüm etiketi atılınca CI imzalar, notarize eder ve `AudioTab.zip`'i Release'e ekler.
+- The icon lives in [Icon/AppIcon.icon](Icon/AppIcon.icon) as an Icon Composer file. `tools/make_icon.sh` compiles it, and `tools/icon_review.sh` shows every appearance. SVG versions for the web and documents (colored, monochrome black/white and `currentColor`) are in [docs/brand](docs/brand).
+- The README images are generated from the scenes in [tools/readme-art](tools/readme-art), in English and Turkish: `tools/readme-art/render.sh`.
+- Changes collect under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). When a release tag is pushed, CI signs, notarizes and attaches `AudioTab.zip` to the release.
 
-## Lisans
+## License
 
-[MIT](LICENSE). Özgün kod © 2026 Firewall Studio.
+[MIT](LICENSE). Original code © 2026 Firewall Studio.

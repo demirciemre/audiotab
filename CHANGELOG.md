@@ -5,6 +5,14 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Eklenenler
+
+- Devir paketi: docs/handoff/upstream-2.4.2 (orijinal 2.4.2 üzerine yapılanlar, Apple hesabıyla ve hesapsız iki yol); tools/make_handoff.sh zip'i sır denetimiyle dist/ içine üretir
+
+### Değişenler
+
+- README İngilizce (README.md), Türkçesi README.tr.md; görseller iki dilde üretiliyor (docs/images/en, docs/images/tr)
+
 ## [v2.5.2] - 2026-10-31
 
 _Doğrulama: yerel tür denetimi ve CI derlemesi (ec55d5d) geçti; ⌘Tab/⌥Tab hızı (60–95 ms), görünmeyen kart ve çift panel düzeltmeleri Developer ID imzalı yerel derlemede elle denendi_

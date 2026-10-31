@@ -8,7 +8,70 @@ Kullanım: tools/readme-art/render.sh
 import html, os, sys
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "/tmp/audiotab-art"
+LANG = sys.argv[2] if len(sys.argv) > 2 else "tr"   # tr | en
 os.makedirs(OUT, exist_ok=True)
+
+# Görsellerdeki Türkçe metinlerin İngilizcesi (arayüz terimleri Sources/Localization.swift ile aynı).
+# Uzun ifadeler önce değiştirilir; kısa sözcükler uzunların içinde kalmaz.
+EN = {
+ "Cmt 31 Eki 16:40": "Sat Oct 31 4:40 PM", "Ekim 2026": "October 2026",
+ "Proje panosu — Tarayıcı": "Project board — Browser", "main.swift — Kod": "main.swift — Code", "~/projeler — zsh": "~/projects — zsh",
+ "Proje panosu": "Project board", "Toplantı notları": "Meeting notes", "Çalma listesi": "Playlist", "Tatil albümü": "Holiday album",
+ "Ekip sohbeti": "Team chat", "Gelen kutusu": "Inbox", "Logo taslağı": "Logo draft", "Dokümantasyon": "Documentation",
+ "Alışveriş": "Shopping", "Hafta": "Week", "Albüm": "Album", "Aile": "Family", "Radyo": "Radio", "Bülten": "Newsletter",
+ "Afiş": "Poster", "afiş.png": "poster.png", "Haberler": "News", "Ekip": "Team",
+ "⌘ basılı · Tab sonraki · ⇧Tab önceki · bırakınca o pencereye geçer": "Hold ⌘ · Tab next · ⇧Tab previous · release to switch to that window",
+ "↑ 4 pencere daha": "↑ 4 more windows", "↓ 6 pencere daha": "↓ 6 more windows",
+ "F: yalnızca seçili uygulamanın pencereleri · A: filtreyi değiştir · kenar çubuğundan klasöre tek tık": "F: only the selected app's windows · A: change filter · one click to a folder in the sidebar",
+ "Panel açıkken": "While the panel is open", "pencereyi kapat": "close window", "uygulamadan çık": "quit app",
+ "ses cihazını değiştir": "change sound device", "sadece bu uygulama": "only this app", "filtreyi değiştir": "change filter",
+ "sonraki": "next", "önceki": "previous", "gezin": "navigate", "küçült": "minimize", "gizle": "hide", "vazgeç": "cancel", ">geç<": ">switch<",
+ "Kablosuz Kulaklık": "Wireless Headphones", "MacBook Hoparlörleri": "MacBook Speakers", "Masaüstü Hoparlör": "Desktop Speaker",
+ "Harici monitör · DDC/CI": "External display · DDC/CI", "Harici Monitör": "External Display", "Harici monitör": "External display",
+ "Ses çıkışı değişti": "Sound output changed", "basılıyken": "held", "Ses cihazları · sırayla": "Sound devices · in order",
+ "Çıkarılan kulaklığı hatırlar, takınca geri döner": "Remembers unplugged headphones and switches back when you plug them in",
+ "Uygulamaya göre ses cihazı": "Sound device per app", "Uygulama öne gelince ses kendiliğinden o cihaza geçer": "When an app comes to the front, sound moves to its device",
+ "⌘Tab panelinde ses cihazını değiştir": "change the sound device in the ⌘Tab panel", "Kulaklık": "Headphones",
+ "Ekranın hangi bölmesine?": "Which part of the screen?", "1 · Dahili ekran · buradasın": "1 · Built-in display · you're here",
+ "2 · Harici monitör": "2 · External display", "Hedef monitör": "Target display",
+ "1–9 düzen seç · ↩ seç · Tab monitör değiştir · Esc kapat": "1–9 pick a layout · ↩ choose · Tab change display · Esc close",
+ "Sonuç: 2 dikey bölme": "Result: 2 columns", "Tam ekran": "Full screen", "2 dikey": "2 columns", "2 yatay": "2 rows", "3 dikey": "3 columns",
+ "Bulunduğun ekran": "Current screen", "Kaydırmalı": "Scrolling", "Kayıt": "Record", "Alan": "Area",
+ "Sen kaydırırsın, AudioTab yakalar": "You scroll, AudioTab captures", "Tek parça uzun ekran görüntüsü · ⌘⇧6": "One long screenshot · ⌘⇧6",
+ "Monitör 1 · DDC/CI ile parlaklık ve ses, menü çubuğundan": "Display 1 · brightness and volume over DDC/CI, from the menu bar",
+ "Monitör 2 · ⌘⇧< ile tam karartma": "Display 2 · full blackout with ⌘⇧<", "Monitör 2 · ⌘⇧&lt; ile tam karartma": "Display 2 · full blackout with ⌘⇧&lt;",
+ "tamamen karartıldı": "fully blacked out",
+ "Farenin yan tuşları Finder klasörlerinde geri ve ileri gider": "The mouse side buttons go back and forward in Finder folders",
+ "Projeler › audiotab": "Projects › audiotab", "‹ Geri": "‹ Back", "İleri ›": "Forward ›",
+ "DOCK'A SÜRÜKLE-BIRAK": "DRAG TO DOCK", "Dock\'a sürükle-bırak": "Drag to Dock", "Dock'a sürükle-bırak": "Drag to Dock",
+ "Dosyayı Dock'taki uygulamanın üstüne getir: beklemeden öne gelir, dosyayı doğrudan penceresine bırakırsın": "Hold a file over an app in the Dock: it comes forward right away, and you drop the file straight into its window",
+ "Tarayıcı klavyeyi kilitledi": "Browser locked the keyboard", "⌘Tab şimdilik macOS'unki · kilit kalkınca AudioTab devralır": "⌘Tab is macOS's for now · AudioTab takes over when the lock lifts",
+ "Parola alanları ve \"güvenli klavye girişi\" tuşları her uygulamadan gizler; AudioTab bunu fark eder": "Password fields and \"secure keyboard entry\" hide keys from every app; AudioTab notices",
+ 'Parola alanları ve "güvenli klavye girişi" tuşları her uygulamadan gizler; AudioTab bunu fark eder': 'Password fields and "secure keyboard entry" hide keys from every app; AudioTab notices',
+ "Her şey hazır": "All set", "Kısayollar çalışıyor": "Shortcuts are working", "Gerekli izinler": "Required permissions",
+ "⌘Tab, ⌥Tab ve ses kısayolu için; pencereleri kapatmak ve küçültmek için": "For ⌘Tab, ⌥Tab and the sound shortcut; to close and minimize windows",
+ "Pencere önizlemeleri, ekran görüntüsü ve kayıt için": "For window previews, screenshots and recording",
+ "Basılan tuşlar kaydedilmez, saklanmaz. Yalnızca güncelleme kontrolü için GitHub'a bağlanır.": "Keystrokes are never logged or stored. AudioTab only connects to GitHub to check for updates.",
+ "● Verildi": "● Granted", "Erişilebilirlik": "Accessibility", "Ekran Kaydı": "Screen Recording",
+ "Pencereler": "Windows", "İzinler": "Permissions", "Genel": "General", "Sürümler": "Versions",
+ "Yeni sürüm: 2.6.0": "New version: 2.6.0", "Apple Developer ID ile imzalı": "Signed with Apple Developer ID", "Aynı Team ID": "Same Team ID",
+ "Apple tarafından notarize edilmiş": "Notarized by Apple", "Sertifika iptal edilmemiş": "Certificate not revoked",
+ "Yalnızca GitHub · HTTPS (TLS 1.2+)": "GitHub only · HTTPS (TLS 1.2+)", "Güncelle ve yeniden başlat": "Update and restart", ">Sonra<": ">Later<",
+ "İndir · aç · çalıştır": "Download · open · run", "\"Apple could not verify…\" yok": "No \"Apple could not verify…\"", '"Apple could not verify…" yok': 'No "Apple could not verify…"',
+ "Notarize edilmiş ve bileti zımbalanmış uygulama Gatekeeper'dan uyarısız geçer. Karantina bayrağına dokunulmaz.": "A notarized app with a stapled ticket passes Gatekeeper without a warning. The quarantine flag is left alone.",
+ "Tarayıcılar": "Browsers", "Geliştirme": "Development", "Uygulamalar": "Apps", "Klasörler": "Folders", "Projeler": "Projects", "Favoriler": "Favorites",
+ "Masaüstü": "Desktop", "İndirilenler": "Downloads", "Belgeler": "Documents", "Fotoğraflar": "Photos", "Tümü": "All",
+ "Tarayıcı": "Browser", "Notlar": "Notes", "Müzik": "Music", "Mesajlar": "Messages", "Takvim": "Calendar", "Posta": "Mail",
+ "Tasarım": "Design", "Ayarlar": "Settings", "Klasör": "Folder", ">Kod<": ">Code<", ">Ekran<": ">Screen<", ">Ses<": ">Sound<", ">İş<": ">Work<",
+}
+
+def translate(doc):
+    if LANG != "en":
+        return doc
+    doc = doc.replace('lang="tr"', 'lang="en"')
+    for k in sorted(EN, key=len, reverse=True):
+        doc = doc.replace(k, EN[k])
+    return doc
 
 ACCENT = "#6366f1"
 
@@ -122,7 +185,7 @@ def page(name, w, h, inner):
     doc = (f'<!doctype html><html lang="tr"><head><meta charset="utf-8"><style>{CSS}</style></head>'
            f'<body><div class="frame" style="width:{w}px;height:{h}px">{inner}</div></body></html>')
     with open(os.path.join(OUT, f"{name}.html"), "w") as f:
-        f.write(doc)
+        f.write(translate(doc))
     print(f"{name} {w} {h}")
 
 def esc(s): return html.escape(s)

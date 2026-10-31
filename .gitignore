@@ -12,3 +12,4 @@ publish.sh
 *.pem
 .env*
 notary.json
+dist/
