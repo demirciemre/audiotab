@@ -80,6 +80,8 @@ struct ReleaseInfo: Identifiable {
     let zipURL: URL
     let page: URL
     var date: Date? = nil
+    /// false: sürüm yayınlanmış ama AudioTab.zip henüz eklenmemiş (CI notarize ediyor); güncelleme önerilmez
+    var ready = true
     var id: String { version }
 }
 
@@ -149,7 +151,7 @@ final class Updater: ObservableObject {
         Task {
             do {
                 let info = try await Self.fetchLatest()
-                let newer = Self.isNewer(info.version, than: currentVersion)
+                let newer = info.ready && Self.isNewer(info.version, than: currentVersion)
                 DispatchQueue.main.async {
                     self.lastCheck = Date()
                     self.latest = info
@@ -208,12 +210,13 @@ final class Updater: ObservableObject {
         }
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         let assets = json["assets"] as? [[String: Any]] ?? []
-        let dl = assets.first(where: { ($0["name"] as? String) == "AudioTab.zip" })
+        let zip = assets.first(where: { ($0["name"] as? String) == "AudioTab.zip" })
+        let dl = zip
             .flatMap { ($0["browser_download_url"] as? String).flatMap(URL.init(string:)) }
             .flatMap { u in UpdateConfig.isAllowed(u) ? u : nil }
             ?? fallback
         let page = releasePage(json["html_url"])
-        return ReleaseInfo(version: version, notes: json["body"] as? String ?? "", zipURL: dl, page: page)
+        return ReleaseInfo(version: version, notes: json["body"] as? String ?? "", zipURL: dl, page: page, ready: zip != nil)
     }
 
     /// github.com/…/releases/latest → …/releases/tag/v2.3.0 yönlendirmesinden sürümü al

@@ -5,6 +5,14 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Değişenler
+
+- GitHub Release'i artık CI açıyor, notarize edilmiş AudioTab.zip ile birlikte; sürüm notu CHANGELOG'dan alınıyor
+
+### Düzeltilenler
+
+- Güncelleyici, AudioTab.zip'i henüz eklenmemiş sürümü önermiyor (notarize sürerken "İndirme başarısız (404)" görünmüyordu)
+
 ## [v2.5.3] - 2026-10-31
 
 _Doğrulama: yerel tür denetimi geçti; Liste/Gruplu kaydırma ve Panel açık kalsın yerel derlemede elle denendi_
