@@ -207,6 +207,7 @@ import UserNotifications
         if on {
             // Tuşlar bize ulaşamıyor: macOS'un kendi ⌘Tab'ı ve ekran görüntüsü kısayolları geçici olarak geri
             setNativeHotkeys(allManagedNativeHotkeys, enabled: true)
+            switcher.nativeCmdTabOn = true
             guard Date().timeIntervalSince(lastSecureNotice) > 600 else { return }   // en fazla 10 dakikada bir haber ver
             lastSecureNotice = Date()
             let who = SecureInput.ownerName()

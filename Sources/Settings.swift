@@ -952,7 +952,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label(L("Giriş İzleme izni gerekmez (eski AudioHop'tan kalmışsa kapatabilirsin)."), systemImage: "keyboard")
                 Label(L("Yeniden derledikten sonra izin açık görünüp çalışmıyorsa: listeden AudioTab'ı – ile kaldırıp + ile tekrar ekle."), systemImage: "arrow.triangle.2.circlepath")
-                Label(L("Hiçbir şey kaydedilmez, diske yazılmaz, internete gönderilmez."), systemImage: "hand.raised.fill")
+                Label(L("Basılan tuşlar kaydedilmez, saklanmaz. Yalnızca güncelleme kontrolü için GitHub'a bağlanır."), systemImage: "hand.raised.fill")
             }
             .font(.system(size: 11.5))
             .foregroundStyle(.white.opacity(0.65))

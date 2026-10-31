@@ -7,6 +7,12 @@ import AppKit
 import ApplicationServices
 import ServiceManagement
 import ScreenCaptureKit
+import os
+
+/// Açılış süresi ölçümü: `log stream --predicate 'subsystem == "com.uniwebsolution.audiotab" AND category == "perf"'`
+let perfLog = Logger(subsystem: "com.uniwebsolution.audiotab", category: "perf")
+@inline(__always) func perfNow() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
+@inline(__always) func perfMs(_ since: UInt64) -> Double { Double(perfNow() &- since) / 1_000_000 }
 
 // MARK: - Sistem fonksiyonları (çalışma anında yüklenir; derleme sırasında bağlanmaz)
 
@@ -556,9 +562,11 @@ enum AX {
 enum Thumbs {
     static func capture(_ wids: [CGWindowID], box: CGSize, scale: CGFloat,
                         each: @escaping @MainActor (CGWindowID, CGImage) -> Void) async {
+        let tc = perfNow()
         guard !wids.isEmpty,
               let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
         else { return }
+        perfLog.notice("thumb shareableContent=\(perfMs(tc), format: .fixed(precision: 1))ms")
         var map: [CGWindowID: SCWindow] = [:]
         for w in content.windows { map[w.windowID] = w }
 
@@ -719,14 +727,20 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         Switcher.refreshRegistry(force: true)
     }
 
+    /// macOS'un kendi ⌘Tab'ı açık mı (⌘Tab bizde değilse ya da güvenli giriş yüzünden geri verildiyse).
+    /// Açıkken ⌘Tab'da kendi panelimizi açmayız: ikisi aynı anda görünmesin.
+    var nativeCmdTabOn = true
+
     /// Cmd+Tab bizdeyse sistemin kendi Cmd+Tab'ını kapat, değilse geri ver.
     func applyNative() {
         guard tap != nil else { return }
-        setNativeCommandTab(!Profile.cmd.enabled)
+        nativeCmdTabOn = !Profile.cmd.enabled
+        setNativeCommandTab(nativeCmdTabOn)
     }
 
     func stop() {
         if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        nativeCmdTabOn = true
         setNativeCommandTab(true)
     }
 
@@ -739,6 +753,8 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     func handle(_ type: CGEventType, _ key: Int64, _ flags: CGEventFlags) -> Bool {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
+            // Kapalıyken gelen tuşlar arkadaki uygulamaya gitti, ⌥/⌘ bırakılışı da kaçmış olabilir
+            perfLog.notice("tap disabled timeout=\(type == .tapDisabledByTimeout) active=\(self.active)")
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
             return false
         case .flagsChanged:
@@ -752,11 +768,15 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
                     return true
                 }
                 if let p = Profile.allCases.first(where: {
-                    $0.enabled && flags.contains($0.flag) && !flags.contains($0.other) && !flags.contains(.maskControl)
+                    $0.enabled && !($0 == .cmd && nativeCmdTabOn)
+                        && flags.contains($0.flag) && !flags.contains($0.other) && !flags.contains(.maskControl)
                 }) {
                     profile = p
                     begin(reverse: shift)
                     return true
+                }
+                if flags.contains(.maskAlternate) || flags.contains(.maskCommand) {
+                    perfLog.notice("tab passed through flags=\(flags.rawValue, format: .hex)")
                 }
                 return false
             }
@@ -798,11 +818,41 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         return CGPreflightScreenCaptureAccess()
     }
 
+    /// Tuş yakalayıcı (tap) bekletilmesin diye liste ve yerleşim tap döndükten sonra hazırlanır.
+    /// Hazır olmadan gelen Tab'lar ve ⌘ bırakma burada birikir.
+    private var built = false
+    private var revealDue = false
+    private var pendingSteps = 0
+    private var pendingCommit = false
+
     private func begin(reverse: Bool) {
-        allItems = WindowList.build(mru: mru, showMin: profile.showMinimized)
-        guard !allItems.isEmpty else { return }
-        items = filtered()
+        let t0 = perfNow()
+        if SecureInput.isOn { perfLog.notice("begin with secure input on") }
         active = true
+        built = false; revealDue = false; pendingSteps = 0; pendingCommit = false
+        // Çok hızlı Cmd+Tab'da (60 ms altı) panel hiç çizilmez, anında geçer.
+        let work = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.active else { return }
+                self.revealDue = true
+                guard self.built else { return }   // hazırlık bitince açılır
+                self.ui.reveal()
+                perfLog.notice("panel shown=\(perfMs(t0), format: .fixed(precision: 1))ms")
+            }
+        }
+        showWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06, execute: work)
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated { self?.prepareSession(reverse: reverse, t0: t0) }
+        }
+    }
+
+    private func prepareSession(reverse: Bool, t0: UInt64) {
+        guard active, !built else { return }
+        allItems = WindowList.build(mru: mru, showMin: profile.showMinimized)
+        let buildMs = perfMs(t0)
+        guard !allItems.isEmpty else { end(); return }
+        items = filtered()
         selected = startIndex(reverse: reverse)
         applyGrouping()
         ui.filterBar = filterBarModel()
@@ -832,24 +882,29 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
             let wids = ordered.prefix(48).filter { $0.wid != 0 && !$0.minimized }.map(\.wid)
             let box = ui.thumbBox
             let scale = NSScreen.main?.backingScaleFactor ?? 2
+            let cached = wids.filter { thumbCache[$0] != nil }.count
             captureTask = Task { [weak self] in
+                var first = true
                 await Thumbs.capture(wids, box: box, scale: scale) { wid, img in
+                    if first { first = false; perfLog.notice("thumb first=\(perfMs(t0), format: .fixed(precision: 1))ms") }
                     guard let self, self.active else { return }
                     self.thumbCache[wid] = img
                     self.ui.updateThumb(wid, img)
                 }
+                perfLog.notice("thumb all=\(perfMs(t0), format: .fixed(precision: 1))ms count=\(wids.count) cachedAtOpen=\(cached)")
             }
         }
 
-        // Çok hızlı Cmd+Tab'da (60 ms altı) panel hiç çizilmez, anında geçer.
-        let work = DispatchWorkItem { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self, self.active else { return }
-                self.ui.show(self.items, selected: self.selected, thumbs: self.thumbCache)
-            }
-        }
-        showWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06, execute: work)
+        built = true
+        if pendingSteps != 0 { step(pendingSteps); pendingSteps = 0 }
+        // ⌘ panel hazırlanmadan bırakıldı: yerleşimle uğraşmadan doğrudan geç
+        if pendingCommit { commit(); return }
+
+        // Yerleşimi 60 ms beklemenin içinde yap; süre dolunca panel yalnızca öne gelir
+        let ts = perfNow()
+        ui.show(items, selected: selected, thumbs: thumbCache, reveal: revealDue)
+        perfLog.notice("begin build=\(buildMs, format: .fixed(precision: 1))ms layout=\(perfMs(ts), format: .fixed(precision: 1))ms ready=\(perfMs(t0), format: .fixed(precision: 1))ms items=\(self.allItems.count)")
+        if revealDue { perfLog.notice("panel shown=\(perfMs(t0), format: .fixed(precision: 1))ms late") }
     }
 
     // MARK: Uygulama filtresi (ör. ⌥Tab sadece Chrome pencereleri)
@@ -947,6 +1002,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     }
 
     private func step(_ d: Int) {
+        if active && !built { pendingSteps += d; return }
         guard !items.isEmpty else { return }
         if selected < 0 { select(d > 0 ? 0 : items.count - 1); return }
         let n = selected + d
@@ -972,6 +1028,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
 
     private func commit() {
         guard active else { return }
+        if !built { pendingCommit = true; return }
         if selected < 0 { end(); return }   // seçim yoksa hiçbir yere geçme
         let item = items.indices.contains(selected) ? items[selected] : nil
         end()
@@ -980,6 +1037,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
 
     private func end() {
         active = false
+        built = false; revealDue = false; pendingSteps = 0; pendingCommit = false
         showWork?.cancel(); showWork = nil
         captureTask?.cancel(); captureTask = nil
         ui.hide()
@@ -1203,6 +1261,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
             preparedThumbH = thumbH
         } else {
             thumbH = (previews && !listMode) ? (h * 0.22).clamped(150, 260).rounded() : 76
+            preparedThumbH = thumbH
         }
     }
 
@@ -1213,7 +1272,15 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     }
     private var cellH: CGFloat { previews ? thumbH + titleH + inset : 168 }
 
-    func show(_ items: [Item], selected: Int, thumbs: [CGWindowID: CGImage]) {
+    /// Panel görünmüyorsa öne getir (yerleşim show(..., reveal: false) ile önceden yapıldı)
+    func reveal() {
+        guard !panel.isVisible else { return }
+        panel.alphaValue = 1
+        panel.orderFrontRegardless()   // animasyon yok: anında görünür
+        panel.invalidateShadow()
+    }
+
+    func show(_ items: [Item], selected: Int, thumbs: [CGWindowID: CGImage], reveal: Bool = true) {
         lastItems = items
         lastThumbs = thumbs
         cells.forEach { $0.removeFromSuperview() }
@@ -1228,16 +1295,13 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         } else if groupedMode {
             layoutGrouped(items, thumbs: thumbs, screen: screen)
         } else {
-            layoutGrid(items, thumbs: thumbs, screen: screen)
+            layoutGrid(items, selected: selected, thumbs: thumbs, screen: screen)
         }
         sheen.frame = glass.bounds
         tint.frame = glass.bounds
         setSelected(selected)
 
-        if !panel.isVisible {
-            panel.alphaValue = 1
-            panel.orderFrontRegardless()   // animasyon yok: anında görünür
-        }
+        if reveal { self.reveal() }
         panel.invalidateShadow()
     }
 
@@ -1250,28 +1314,48 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: false)
     }
 
-    private func layoutGrid(_ items: [Item], thumbs: [CGWindowID: CGImage], screen: NSScreen) {
+    /// Izgarada görünen ilk satır (tüm pencereler sığmadığında seçimle birlikte kayar)
+    private var firstRow = 0
+
+    private func layoutGrid(_ items: [Item], selected: Int, thumbs: [CGWindowID: CGImage], screen: NSScreen) {
         let vf = screen.visibleFrame
         let scale = screen.backingScaleFactor
 
         // Satırlara yerleştir (pencere oranına göre değişken genişlik, AltTab gibi)
         let maxRowW = (vf.width * 0.92 - pad * 2 - sideExtra).rounded(.down)
-        let maxRows = max(1, Int((vf.height * 0.88 - pad * 2 - headerH + gap) / (cellH + gap)))
+        var maxRows = 1
         var rowList: [[Int]] = [[]]
         var widths: [CGFloat] = []
-        var rowW: CGFloat = 0
-        for i in items.indices {
-            let w = min(cellWidth(items[i]), maxRowW)
-            widths.append(w)
-            if !rowList[rowList.count - 1].isEmpty && rowW + gap + w > maxRowW {
-                if rowList.count == maxRows { break }
-                rowList.append([]); rowW = 0
+        thumbH = preparedThumbH   // her çizimde hazırlanan boydan başla (art arda küçülmesin)
+        // Tüm pencereler sığana kadar önizlemeleri küçült; sığmayan kart çizilmeden seçilemesin
+        for attempt in 0..<8 {
+            if attempt > 0 { thumbH = max(90, (thumbH * 0.86).rounded()) }
+            maxRows = max(1, Int((vf.height * 0.88 - pad * 2 - headerH + gap) / (cellH + gap)))
+            rowList = [[]]; widths = []
+            var rowW: CGFloat = 0
+            for i in items.indices {
+                let w = min(cellWidth(items[i]), maxRowW)
+                widths.append(w)
+                if !rowList[rowList.count - 1].isEmpty && rowW + gap + w > maxRowW {
+                    rowList.append([]); rowW = 0
+                }
+                rowW += (rowList[rowList.count - 1].isEmpty ? 0 : gap) + w
+                rowList[rowList.count - 1].append(i)
             }
-            rowW += (rowList[rowList.count - 1].isEmpty ? 0 : gap) + w
-            rowList[rowList.count - 1].append(i)
+            if rowList.count <= maxRows || !previews || thumbH <= 90 { break }
         }
-        rows = rowList
-        visibleRange = 0..<items.count
+        // Hâlâ sığmıyorsa seçili kartın satırı görünecek şekilde kaydır
+        if rowList.count > maxRows {
+            let selRow = rowList.firstIndex { $0.contains(selected) } ?? 0
+            if selRow < firstRow { firstRow = selRow }
+            if selRow >= firstRow + maxRows { firstRow = selRow - maxRows + 1 }
+            firstRow = min(max(0, firstRow), rowList.count - maxRows)
+            rows = Array(rowList[firstRow..<(firstRow + maxRows)])
+        } else {
+            firstRow = 0
+            rows = rowList
+        }
+        visibleRange = (rows.first?.first ?? 0)..<((rows.last?.last ?? -1) + 1)
         func width(of row: [Int]) -> CGFloat { row.reduce(0) { $0 + widths[$1] } + CGFloat(max(0, row.count - 1)) * gap }
 
         let contentW = rows.map(width).max() ?? 0
@@ -1496,8 +1580,8 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
     }
 
     func setSelected(_ i: Int) {
-        // Liste görünümünde seçim görünen aralığın dışına çıktıysa listeyi kaydır
-        if listMode, i >= 0, !visibleRange.contains(i), panel.isVisible, lastItems.indices.contains(i) {
+        // Liste ve ızgarada seçim görünen aralığın dışına çıktıysa kaydır
+        if listMode || !groupedMode, i >= 0, !visibleRange.contains(i), panel.isVisible, lastItems.indices.contains(i) {
             show(lastItems, selected: i, thumbs: lastThumbs)
             return
         }
@@ -1516,6 +1600,7 @@ let tapCallback: CGEventTapCallBack = { _, type, event, _ in
         lastItems = []
         lastThumbs = [:]
         visibleRange = 0..<0
+        firstRow = 0
     }
 }
 

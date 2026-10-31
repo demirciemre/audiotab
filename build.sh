@@ -154,7 +154,8 @@ if [[ $INSTALL == 1 ]]; then
   pkill -x AudioTab 2>/dev/null || true
   sleep 0.5
   rm -rf "/Applications/$APP"
-  cp -R "$APP" /Applications/
+  ditto "$APP" "/Applications/$APP"
+  rm -rf "$APP"   # Spotlight'ta ikinci bir AudioTab görünmesin
   open "/Applications/$APP"
   echo ""
   echo "✅ /Applications/AudioTab.app kuruldu ve açıldı."

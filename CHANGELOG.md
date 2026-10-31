@@ -9,11 +9,20 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 - Güvenlik denetimi raporu: docs/security-audit.md (Cloudflare security-audit, standard profil)
 
+### Değişenler
+
+- ⌘Tab / ⌥Tab paneli daha hızlı açılıyor: tuş hemen yakalanıyor, pencere listesi ve yerleşim 60 ms'lik bekleme içinde hazırlanıyor; liste çıkarılırken diğer tuş basışları artık gecikmiyor
+
 ### Düzeltilenler
 
 - Notarize zaman aşımı 2 saate çıktı ve reddedilmeden ayrı raporlanıyor
 - Tanı bilgisi kopyalanırken e-postalar kısaltmadan önce gizleniyor; hesap adları maskeleniyor
 - Güvenli giriş sırasında ⌘Tab ayarı değiştirilince macOS ⌘Tab'ı kapanmıyor; karartma klavye kilidi yalnızca ⌘⇧< kaçışı açıkken devrede; sinyaller güvenli işleniyor
+- ./build.sh --install kurulumdan sonra proje klasöründeki kopyayı siliyor; Spotlight'ta iki AudioTab görünmüyor
+- İzinler sekmesindeki gizlilik notu artık doğru: uygulama yalnızca güncelleme kontrolü için GitHub'a bağlanır
+- Güvenli giriş (ör. parola alanı) sonrası macOS'un kendi ⌘Tab'ı ile AudioTab paneli aynı anda açılmıyor
+- Ekran bölme seçicisinde monitör numarası kartı artık seçici pencerenin üstüne binmiyor
+- ⌥Tab / ⌘Tab'da ekrana sığmayan pencereler artık görünmez kalmıyor: önizlemeler sığana kadar küçülüyor, yine sığmazsa panel seçili satıra kayıyor
 
 ### Güvenlik
 

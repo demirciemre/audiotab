@@ -205,7 +205,7 @@ private let englishStrings: [String: String] = [
     "Bilgi": "Info",
     "Giriş İzleme izni gerekmez (eski AudioHop'tan kalmışsa kapatabilirsin).": "Input Monitoring permission isn't needed (you can turn it off if it's left over from AudioHop).",
     "Yeniden derledikten sonra izin açık görünüp çalışmıyorsa: listeden AudioTab'ı – ile kaldırıp + ile tekrar ekle.": "If a permission looks on but doesn't work after a rebuild: remove AudioTab from the list with – and add it again with +.",
-    "Hiçbir şey kaydedilmez, diske yazılmaz, internete gönderilmez.": "Nothing is logged, written to disk or sent over the internet.",
+    "Basılan tuşlar kaydedilmez, saklanmaz. Yalnızca güncelleme kontrolü için GitHub'a bağlanır.": "Keystrokes are never logged or stored. AudioTab only connects to GitHub to check for updates.",
     "Verildi": "Granted",
     "Verilmedi": "Not granted",
     "Ayarları aç": "Open Settings",

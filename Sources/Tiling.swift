@@ -152,7 +152,8 @@ enum Screens {
 @MainActor final class MonitorBadges {
     private var panels: [NSPanel] = []
 
-    func show(_ screens: [NSScreen], target: Int) {
+    /// avoid: seçici panelin çerçevesi; numara kartı onun üstüne binmesin
+    func show(_ screens: [NSScreen], target: Int, avoid: NSRect? = nil) {
         hide()
         guard screens.count > 1 else { return }
         for (i, s) in screens.enumerated() {
@@ -172,9 +173,7 @@ enum Screens {
                                                                 size: Screens.size(s), active: i == target))
             p.contentView = host
             let size = host.fittingSize
-            p.setFrame(NSRect(x: (s.frame.midX - size.width / 2).rounded(),
-                              y: (s.visibleFrame.maxY - size.height - 36).rounded(),
-                              width: size.width, height: size.height), display: true)
+            p.setFrame(Self.place(size, in: s.visibleFrame, avoid: avoid), display: true)
             p.orderFrontRegardless()
             panels.append(p)
         }
@@ -183,6 +182,22 @@ enum Screens {
     func hide() {
         panels.forEach { $0.orderOut(nil) }
         panels.removeAll()
+    }
+
+    /// Önce üst orta; seçici panele değiyorsa üst köşeler, sonra alt kenar
+    private static func place(_ size: NSSize, in vf: NSRect, avoid: NSRect?) -> NSRect {
+        let m: CGFloat = 36, w = size.width, h = size.height
+        let top = vf.maxY - h - m, bottom = vf.minY + m
+        let candidates = [
+            NSPoint(x: vf.midX - w / 2, y: top),
+            NSPoint(x: vf.minX + m, y: top),
+            NSPoint(x: vf.maxX - w - m, y: top),
+            NSPoint(x: vf.midX - w / 2, y: bottom),
+            NSPoint(x: vf.minX + m, y: bottom),
+            NSPoint(x: vf.maxX - w - m, y: bottom),
+        ].map { NSRect(x: $0.x.rounded(), y: $0.y.rounded(), width: w, height: h) }
+        guard let avoid else { return candidates[0] }
+        return candidates.first { !$0.insetBy(dx: -8, dy: -8).intersects(avoid) } ?? candidates[0]
     }
 }
 
@@ -374,7 +389,7 @@ final class TilingModel: ObservableObject {
                               width: Self.size.width, height: Self.size.height), display: true)
         panel.makeKeyAndOrderFront(nil)
         installMonitors()
-        badges.show(model.screens, target: model.target)
+        badges.show(model.screens, target: model.target, avoid: panel.frame)
     }
 
     func hide() {
@@ -388,7 +403,7 @@ final class TilingModel: ObservableObject {
     func chooseMonitor(_ i: Int) {
         guard model.screens.indices.contains(i) else { return }
         model.target = i
-        badges.show(model.screens, target: i)
+        badges.show(model.screens, target: i, avoid: panel.frame)
         if model.step == .monitor { model.step = .layout }
     }
 
@@ -780,7 +795,7 @@ final class ZonePickerModel: ObservableObject {
         panel.setFrame(NSRect(x: x.rounded(), y: y.rounded(), width: size.width, height: size.height), display: true)
         panel.makeKeyAndOrderFront(nil)
         installMonitors()
-        badges.show(list, target: model.target)
+        badges.show(list, target: model.target, avoid: panel.frame)
     }
 
     func hide() {
@@ -793,7 +808,7 @@ final class ZonePickerModel: ObservableObject {
     func chooseMonitor(_ i: Int) {
         guard model.screens.indices.contains(i) else { return }
         model.target = i
-        badges.show(model.screens, target: i)
+        badges.show(model.screens, target: i, avoid: panel.frame)
     }
 
     func pick(_ zone: CGRect) {
