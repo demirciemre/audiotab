@@ -16,6 +16,14 @@ struct ChangelogEntry {
 
 enum Changelog {
     static let entries: [ChangelogEntry] = [
+        ChangelogEntry(version: "2.6.0", items: [
+            ("⌘Tab / ⌥Tab: Tab ile ilerlerken imlecin altındaki kart seçimi kapmıyor",
+             "⌘Tab / ⌥Tab: the card under the pointer no longer steals the selection while you step with Tab"),
+            ("Ayarlar › Pencereler: ⌘Tab ve ⌥Tab için ayrı ayrı \"Fareyle seçim\" anahtarı",
+             "Settings › Windows: a separate \"Select on hover\" switch for ⌘Tab and ⌥Tab"),
+            ("Güncelleyici, indirme dosyası henüz hazır olmayan sürümü önermiyor",
+             "The updater no longer offers a release whose download isn't ready yet"),
+        ]),
         ChangelogEntry(version: "2.5.3", items: [
             ("Liste görünümü fare tekerleği ve trackpad ile kayıyor",
              "List view scrolls with the mouse wheel and the trackpad"),
