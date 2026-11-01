@@ -438,6 +438,9 @@ struct SettingsView: View {
                 ToggleRow(L("Küçültülmüş pencereler"), L("Küçültülmüş ve penceresiz uygulamaları da göster"),
                           isOn: model.profileBinding(p, "showMinimized"))
                     .disabled(!p.enabled)
+                ToggleRow(L("Fareyle seçim"), L("İmlecin üstündeki kart seçilir. Kapalıyken yalnızca Tab, oklar ve tıklama seçer."),
+                          isOn: model.profileBinding(p, "hover"))
+                    .disabled(!p.enabled)
                 Divider().opacity(0.4)
                 Row(L("Hangi uygulamalar"), L("Sadece seçilen uygulamanın pencereleri arasında geçer (ör. tüm Chrome pencereleri). Panel açıkken A ile değiştirebilirsin.")) {
                     Picker("", selection: model.bind({ p.appFilter }, { p.appFilter = $0 })) {

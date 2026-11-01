@@ -162,6 +162,8 @@ private let englishStrings: [String: String] = [
     "%d pencere daha": "%d more windows",
     "Ekran görüntüsü için": "For screenshots",
     "Panel açık kalsın": "Keep the panel open",
+    "Fareyle seçim": "Select on hover",
+    "İmlecin üstündeki kart seçilir. Kapalıyken yalnızca Tab, oklar ve tıklama seçer.": "The card under the pointer gets selected. When off, only Tab, the arrow keys and clicks select.",
     "⌘Tab / ⌥Tab paneli tuşlar bırakılınca kapanmaz ve ekran görüntülerinde görünür; Esc ya da ↩ ile kapanır. 20 sn içinde panel açılmazsa ya da panel 20 sn açık kalınca kendiliğinden kapanır.": "The ⌘Tab / ⌥Tab panel stays open after you let go of the keys and shows up in screenshots; close it with Esc or ↩. Turns itself off if no panel opens within 20 s, or after a panel has been open for 20 s.",
     "Birden fazla monitör varken. Panelde Tab ile her zaman değiştirebilirsin.": "With multiple displays. You can always change it with Tab in the panel.",
     "Farenin olduğu": "Under the mouse",

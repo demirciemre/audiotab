@@ -93,6 +93,12 @@ enum Profile: String, CaseIterable {
         nonmutating set { write("showMinimized", newValue) }
     }
 
+    /// Fareyle seçim: imlecin üstündeki kart seçilir (varsayılan: açık)
+    var hoverSelect: Bool {
+        get { read("hover", true) }
+        nonmutating set { write("hover", newValue) }
+    }
+
     /// Liste görünümü (ses listesi gibi alt alta satırlar). Varsayılan: kapalı (ızgara)
     var list: Bool {
         get { read("list", false) }
@@ -118,6 +124,7 @@ enum Profile: String, CaseIterable {
         case "previews": return previews
         case "list": return list
         case "grouped": return grouped
+        case "hover": return hoverSelect
         default: return showMinimized
         }
     }
@@ -127,6 +134,7 @@ enum Profile: String, CaseIterable {
         case "previews": previews.toggle()
         case "list": list.toggle()
         case "grouped": grouped.toggle()
+        case "hover": hoverSelect.toggle()
         default: showMinimized.toggle()
         }
     }
@@ -667,7 +675,10 @@ enum HoldOpen {
 
     private lazy var ui: SwitcherUI = {
         let u = SwitcherUI(
-            onHover: { [weak self] i in self?.select(i) },
+            onHover: { [weak self] i in
+                guard let self, self.profile.hoverSelect else { return }
+                self.select(i)
+            },
             onExit: { _ in },   // fare karttan çıkınca seçim kaybolmasın
             onClick: { [weak self] i in self?.select(i); self?.commit() }
         )
@@ -1041,6 +1052,7 @@ enum HoldOpen {
 
     private func step(_ d: Int) {
         if active && !built { pendingSteps += d; return }
+        ui.rearmHover()
         guard !items.isEmpty else { return }
         if selected < 0 { select(d > 0 ? 0 : items.count - 1); return }
         let n = selected + d
@@ -1049,11 +1061,13 @@ enum HoldOpen {
 
     /// Gruplu görünümde ←→ bölüm sütunları arasında, diğerlerinde sıradaki/önceki kart
     private func horizontal(_ d: Int) {
+        ui.rearmHover()
         if selected >= 0, ui.groupedMode, let n = ui.columnNeighbor(of: selected, delta: d) { select(n); return }
         step(d)
     }
 
     private func vertical(_ d: Int) {
+        ui.rearmHover()
         if selected < 0 || profile.list || ui.groupedMode { step(d); return }
         if let n = ui.neighbor(of: selected, rowDelta: d) { select(n) }
     }
@@ -1717,6 +1731,9 @@ enum HoldOpen {
         return cells.contains { $0.frame.contains(local) }
     }
 
+    /// Klavyeyle seçim yapıldı: fare gerçekten hareket edene kadar imlecin altındaki kart seçimi almasın
+    func rearmHover() { ItemCell.armedAt = NSEvent.mouseLocation }
+
     func setSelected(_ i: Int) {
         lastSelected = i
         // Seçim görünen aralığın dışına çıktıysa kaydır
@@ -2169,7 +2186,11 @@ final class ItemCell: NSView {
         trackingAreas.forEach(removeTrackingArea)
         addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect], owner: self))
     }
-    private var moved: Bool { NSEvent.mouseLocation != ItemCell.armedAt }
+    /// Elin titremesi ya da kart altında kayan içerik seçimi değiştirmesin: en az 8 pt hareket gerekir
+    private var moved: Bool {
+        let p = NSEvent.mouseLocation, a = ItemCell.armedAt
+        return hypot(p.x - a.x, p.y - a.y) > 8
+    }
     override func mouseEntered(with event: NSEvent) {
         updateDotHover(event)
         if moved { onHover?(index) }

@@ -5,6 +5,10 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Eklenenler
+
+- Ayarlar › Pencereler: ⌘Tab ve ⌥Tab için ayrı ayrı "Fareyle seçim" anahtarı
+
 ### Değişenler
 
 - GitHub Release'i artık CI açıyor, notarize edilmiş AudioTab.zip ile birlikte; sürüm notu CHANGELOG'dan alınıyor
@@ -12,6 +16,7 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 ### Düzeltilenler
 
 - Güncelleyici, AudioTab.zip'i henüz eklenmemiş sürümü önermiyor (notarize sürerken "İndirme başarısız (404)" hatası çıkıyordu)
+- ⌘Tab / ⌥Tab: Tab ile ilerlerken imlecin altındaki kart seçimi kapmıyor; klavyeyle seçimden sonra fare en az 8 pt hareket edince fareyle seçim yeniden başlıyor
 
 ## [v2.5.3] - 2026-10-31
 
