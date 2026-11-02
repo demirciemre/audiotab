@@ -5,6 +5,15 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Düzeltilenler
+
+- Ayarlar › Sürümler: tek alt sürümü olan sürümde (ör. 2.6) "Yükle" düğmesi görünüyor
+- Ayarlar › Sürümler: GitHub'dan gelen sürüm notlarında yalnızca maddeler gösteriliyor; bölüm başlıkları ve doğrulama notu çıkmıyor
+
+### Dahili
+
+- Sürüm notuna "_Doğrulama_" satırı ve "### Dahili" bölümü (CI, derleme) girmiyor
+
 ## [v2.6.0] - 2026-11-02
 
 _Doğrulama: build.sh derlemesi başarılı; ⌘Tab hover düzeltmesi kullanıcı tarafından denendi_

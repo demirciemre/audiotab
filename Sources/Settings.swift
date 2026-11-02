@@ -1046,8 +1046,11 @@ struct SettingsView: View {
         }
         let known = Set(rows.map(\.version))
         for r in updater.releases where !known.contains(r.version) {
+            // Yalnızca maddeler: bölüm başlıkları ve "_Doğrulama: …_" gibi geliştirici notları gösterilmez
             let lines = r.notes.split(separator: "\n")
-                .map { $0.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "*-# ")) }
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { $0.hasPrefix("- ") || $0.hasPrefix("* ") }
+                .map { $0.dropFirst(2).trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
                 .prefix(8)
             rows.append(VersionRow(version: r.version, lines: Array(lines), release: r, preGitHub: false))
@@ -1145,6 +1148,9 @@ struct SettingsView: View {
                         .background(Capsule().fill(Color.green.opacity(0.3)))
                 }
                 Spacer(minLength: 0)
+                if !multi, let v = s.versions.first, v.version != current, let r = v.release {
+                    installButton(r)
+                }
                 if expandable {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -1216,6 +1222,13 @@ struct SettingsView: View {
         .foregroundStyle(.white.opacity(0.78))
     }
 
+    private func installButton(_ r: ReleaseInfo) -> some View {
+        let newer = Updater.isNewer(r.version, than: updater.currentVersion)
+        return Button(newer ? L("Yükle") : L("Bu sürüme dön")) { confirmRelease = r }
+            .controlSize(.small)
+            .disabled(installBusy)
+    }
+
     @ViewBuilder private func subVersionRow(_ v: VersionRow) -> some View {
         let isCurrent = v.version == updater.currentVersion
         VStack(alignment: .leading, spacing: 6) {
@@ -1230,10 +1243,7 @@ struct SettingsView: View {
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Capsule().fill(Color.green.opacity(0.3)))
                 } else if let r = v.release {
-                    let newer = Updater.isNewer(r.version, than: updater.currentVersion)
-                    Button(newer ? L("Yükle") : L("Bu sürüme dön")) { confirmRelease = r }
-                        .controlSize(.small)
-                        .disabled(installBusy)
+                    installButton(r)
                 }
             }
             bulletList(v.lines)

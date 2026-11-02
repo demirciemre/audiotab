@@ -156,7 +156,14 @@ jobs:
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          awk -v h="## [v$VERSION]" 'index($0, h) == 1 { on = 1; next } on && /^## \[/ { exit } on' CHANGELOG.md > notes.md
+          # Kullanıcıya yalnızca maddeler: "_Doğrulama: …_" satırı ve "### Dahili" bölümü (CI, derleme) sürüm notuna girmez
+          awk -v h="## [v$VERSION]" '
+            index($0, h) == 1 { on = 1; next }
+            on && /^## \[/ { exit }
+            !on { next }
+            /^### / { skip = ($0 == "### Dahili"); if (skip) next }
+            skip || /^_.*_$/ { next }
+            { print }' CHANGELOG.md | cat -s > notes.md
           test -s notes.md
 
       - name: Derleme çıktısını al
