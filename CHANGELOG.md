@@ -5,6 +5,10 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+## [v2.6.1] - 2026-11-02
+
+_Doğrulama: build.sh derlemesi başarılı; Sürümler ekranı kullanıcı tarafından denendi_
+
 ### Düzeltilenler
 
 - Ayarlar › Sürümler: tek alt sürümü olan sürümde (ör. 2.6) "Yükle" düğmesi görünüyor
@@ -112,7 +116,8 @@ _Doğrulama: universal derleme (arm64+x86_64) yerelde ve CI'da geçti; Developer
 - install.sh karantinayı silmez; paketi Gatekeeper ve sabit Team ID ile denetler
 - CI artık hiçbir sertifikayı güvenilir kök olarak eklemiyor; action'lar commit SHA'sına sabitlendi
 
-[Unreleased]: https://github.com/demirciemre/audiotab/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/demirciemre/audiotab/compare/v2.6.1...HEAD
+[v2.6.1]: https://github.com/demirciemre/audiotab/compare/v2.6.0...v2.6.1
 [v2.6.0]: https://github.com/demirciemre/audiotab/compare/v2.5.3...v2.6.0
 [v2.5.3]: https://github.com/demirciemre/audiotab/compare/v2.5.2...v2.5.3
 [v2.5.2]: https://github.com/demirciemre/audiotab/compare/v2.5.1...v2.5.2
