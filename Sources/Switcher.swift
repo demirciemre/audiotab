@@ -1211,7 +1211,10 @@ enum HoldOpen {
         if sidebar.superview == nil { glass.addSubview(sidebar) }
     }
     private let barView = FilterBarView()
-    private let barH: CGFloat = 30, barGap: CGFloat = 12
+    private let barGap: CGFloat = 12
+    /// Filtre çiplerinin tek satıra sığması gereken en geniş alan; sığmayanlar alt satıra geçer
+    private var barWrapW: CGFloat = .greatestFiniteMagnitude
+    private var barH: CGFloat { filterBar.map { FilterBarView.height(names: $0.names, maxWidth: barWrapW) } ?? 0 }
     private var headerH: CGFloat { filterBar == nil ? 0 : barH + barGap }
     /// Önizleme yüksekliği (ekrana göre ayarlanır); genişlik pencerenin oranına göre değişir.
     private(set) var thumbH: CGFloat = 170
@@ -1274,11 +1277,11 @@ enum HoldOpen {
     /// Filtre çubuğunu panelin üstüne yerleştir; panel genişliği en az çubuk kadar olsun.
     private var minWidthForBar: CGFloat {
         guard let fb = filterBar else { return 0 }
-        return FilterBarView.width(names: fb.names) + pad * 2
+        return min(FilterBarView.width(names: fb.names), barWrapW) + pad * 2
     }
     private func placeBar(w: CGFloat, h: CGFloat) {
         guard let fb = filterBar else { barView.removeFromSuperview(); return }
-        barView.configure(names: fb.names, icons: fb.icons, current: fb.current)
+        barView.configure(names: fb.names, icons: fb.icons, current: fb.current, wrapWidth: barWrapW)
         barView.frame = NSRect(x: pad, y: h - pad - barH, width: w - pad * 2, height: barH)
         if barView.superview == nil { glass.addSubview(barView) }
     }
@@ -1350,6 +1353,7 @@ enum HoldOpen {
         headerViews.forEach { $0.removeFromSuperview() }
         headerViews.removeAll()
         guard let screen else { return }
+        barWrapW = (screen.visibleFrame.width * 0.9 - pad * 2).rounded(.down)
 
         ItemCell.armedAt = NSEvent.mouseLocation
         if listMode {
@@ -2264,52 +2268,83 @@ final class FilterBarView: NSView {
         let tw = min(150, (name as NSString).size(withAttributes: [.font: font]).width)
         return ceil(tw + padX * 2 + (icon ? iconS + 6 : 0))
     }
+    private static let hintAttrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11, weight: .medium),
+                                                                   .foregroundColor: NSColor.white.withAlphaComponent(0.45)]
+    private static var hintW: CGFloat { (hint as NSString).size(withAttributes: hintAttrs).width + 14 }
+    /// Tek satırda kaplayacağı genişlik
     static func width(names: [String]) -> CGFloat {
         let chips = names.enumerated().reduce(CGFloat(0)) { $0 + chipWidth($1.element, icon: $1.offset > 0) }
-        let hintW = (hint as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 11, weight: .medium)]).width + 14
         return chips + CGFloat(max(0, names.count - 1)) * spacing + hintW
     }
 
-    func configure(names: [String], icons: [NSImage?], current: Int) {
-        self.names = names; self.icons = icons; self.current = current
+    static let rowH: CGFloat = 30, rowGap: CGFloat = 6
+    /// Çipleri maxWidth'e sığan satırlara böl; names.count = sondaki ipucu
+    static func rows(names: [String], maxWidth: CGFloat) -> [[Int]] {
+        var rows: [[Int]] = [], cur: [Int] = [], w: CGFloat = 0
+        for i in 0...names.count {
+            let cw = i == names.count ? hintW : chipWidth(names[i], icon: i > 0)
+            let next = cur.isEmpty ? cw : w + spacing + cw
+            if !cur.isEmpty && next > maxWidth { rows.append(cur); cur = [i]; w = cw } else { cur.append(i); w = next }
+        }
+        if !cur.isEmpty { rows.append(cur) }
+        return rows
+    }
+    static func height(names: [String], maxWidth: CGFloat) -> CGFloat {
+        let n = CGFloat(rows(names: names, maxWidth: maxWidth).count)
+        return n * rowH + (n - 1) * rowGap
+    }
+
+    private var wrapWidth: CGFloat = .greatestFiniteMagnitude
+    func configure(names: [String], icons: [NSImage?], current: Int, wrapWidth: CGFloat) {
+        self.names = names; self.icons = icons; self.current = current; self.wrapWidth = wrapWidth
         needsDisplay = true
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        rects.removeAll()
-        let hintAttrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11, weight: .medium),
-                                                        .foregroundColor: NSColor.white.withAlphaComponent(0.45)]
-        let hintW = (Self.hint as NSString).size(withAttributes: hintAttrs).width
-        let total = Self.width(names: names)
-        var x = max(0, (bounds.width - total) / 2)
-        let y = (bounds.height - Self.chipH) / 2
-        for (i, n) in names.enumerated() {
-            let hasIcon = i > 0
-            let w = Self.chipWidth(n, icon: hasIcon)
-            let r = NSRect(x: x, y: y, width: w, height: Self.chipH)
-            rects.append(r)
-            let path = NSBezierPath(roundedRect: r.insetBy(dx: 0.5, dy: 0.5), xRadius: Self.chipH / 2, yRadius: Self.chipH / 2)
-            if i == current {
-                NSColor.white.withAlphaComponent(0.22).setFill(); path.fill()
-                NSColor.controlAccentColor.setStroke(); path.lineWidth = 1.5; path.stroke()
-            } else {
-                NSColor.white.withAlphaComponent(0.08).setFill(); path.fill()
+        rects = Array(repeating: .zero, count: names.count)
+        let lines = Self.rows(names: names, maxWidth: min(bounds.width, wrapWidth))
+        for (k, line) in lines.enumerated() {
+            let lineW = line.reduce(CGFloat(0)) { $0 + ($1 == names.count ? Self.hintW : Self.chipWidth(names[$1], icon: $1 > 0)) }
+                + CGFloat(line.count - 1) * Self.spacing
+            var x = max(0, (bounds.width - lineW) / 2)
+            let rowTop = bounds.height - CGFloat(k) * (Self.rowH + Self.rowGap)
+            let y = rowTop - Self.rowH + (Self.rowH - Self.chipH) / 2
+            for i in line {
+                if i == names.count {
+                    (Self.hint as NSString).draw(at: NSPoint(x: x + 8, y: y + (Self.chipH - 13) / 2), withAttributes: Self.hintAttrs)
+                    continue
+                }
+                x = drawChip(i, x: x, y: y) + Self.spacing
             }
-            var tx = r.minX + Self.padX
-            if hasIcon, let img = icons[safe: i] ?? nil {
-                img.draw(in: NSRect(x: tx, y: r.midY - Self.iconS / 2, width: Self.iconS, height: Self.iconS))
-                tx += Self.iconS + 6
-            }
-            let attrs: [NSAttributedString.Key: Any] = [.font: Self.font,
-                .foregroundColor: NSColor.white.withAlphaComponent(i == current ? 1 : 0.7)]
-            let s = n as NSString
-            let sz = s.size(withAttributes: attrs)
-            s.draw(with: NSRect(x: tx, y: r.midY - sz.height / 2, width: min(150, sz.width), height: sz.height),
-                   options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attrs)
-            x += w + Self.spacing
         }
-        (Self.hint as NSString).draw(at: NSPoint(x: x + 8, y: (bounds.height - 13) / 2), withAttributes: hintAttrs)
-        _ = hintW
+    }
+
+    /// Bir çipi çiz, sağ kenarını döndür
+    private func drawChip(_ i: Int, x: CGFloat, y: CGFloat) -> CGFloat {
+        let n = names[i]
+        let hasIcon = i > 0
+        let w = Self.chipWidth(n, icon: hasIcon)
+        let r = NSRect(x: x, y: y, width: w, height: Self.chipH)
+        rects[i] = r
+        let path = NSBezierPath(roundedRect: r.insetBy(dx: 0.5, dy: 0.5), xRadius: Self.chipH / 2, yRadius: Self.chipH / 2)
+        if i == current {
+            NSColor.white.withAlphaComponent(0.22).setFill(); path.fill()
+            NSColor.controlAccentColor.setStroke(); path.lineWidth = 1.5; path.stroke()
+        } else {
+            NSColor.white.withAlphaComponent(0.08).setFill(); path.fill()
+        }
+        var tx = r.minX + Self.padX
+        if hasIcon, let img = icons[safe: i] ?? nil {
+            img.draw(in: NSRect(x: tx, y: r.midY - Self.iconS / 2, width: Self.iconS, height: Self.iconS))
+            tx += Self.iconS + 6
+        }
+        let attrs: [NSAttributedString.Key: Any] = [.font: Self.font,
+            .foregroundColor: NSColor.white.withAlphaComponent(i == current ? 1 : 0.7)]
+        let s = n as NSString
+        let sz = s.size(withAttributes: attrs)
+        s.draw(with: NSRect(x: tx, y: r.midY - sz.height / 2, width: min(150, sz.width), height: sz.height),
+               options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attrs)
+        return r.maxX
     }
 
     override func mouseDown(with event: NSEvent) {}

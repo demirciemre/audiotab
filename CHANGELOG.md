@@ -5,6 +5,10 @@ Biçim: [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/). Değişikli
 
 ## [Unreleased]
 
+### Düzeltilenler
+
+- ⌘Tab / ⌥Tab: çok sayıda uygulama filtresi olduğunda filtre çipleri alt satırlara geçiyor; panel ekran dışına taşmıyor
+
 ## [v2.6.1] - 2026-11-02
 
 _Doğrulama: build.sh derlemesi başarılı; Sürümler ekranı kullanıcı tarafından denendi_
