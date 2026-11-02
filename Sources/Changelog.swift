@@ -16,6 +16,12 @@ struct ChangelogEntry {
 
 enum Changelog {
     static let entries: [ChangelogEntry] = [
+        ChangelogEntry(version: "2.6.1", items: [
+            ("Ayarlar › Sürümler: tek alt sürümü olan sürümde de \"Yükle\" düğmesi görünüyor",
+             "Settings › Versions: the Install button also shows for a version with a single release"),
+            ("Ayarlar › Sürümler: yeni sürümlerin notlarında yalnızca değişiklikler gösteriliyor",
+             "Settings › Versions: notes for newer versions show only the changes"),
+        ]),
         ChangelogEntry(version: "2.6.0", items: [
             ("⌘Tab / ⌥Tab: Tab ile ilerlerken imlecin altındaki kart seçimi kapmıyor",
              "⌘Tab / ⌥Tab: the card under the pointer no longer steals the selection while you step with Tab"),
