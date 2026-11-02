@@ -29,13 +29,13 @@
 
 ### Uygulama değil, pencere
 
-⌘Tab, açık her pencereyi ayrı bir kart olarak gösterir: diğer masaüstlerindekiler, tam ekrandakiler ve tarayıcı profilleri dahil. ⌘ basılıyken Tab ile ilerleyin, bırakınca o pencere öne gelir. Panel tuşa basıldıktan 60–95 ms sonra ekrandadır; çok hızlı bir ⌘Tab'da hiç çizilmeden geçer.
+⌘Tab, açık her pencereyi ayrı bir kart olarak gösterir: diğer masaüstlerindekiler, tam ekrandakiler ve tarayıcı profilleri dahil. ⌘ basılıyken Tab ile ilerleyin, bırakınca o pencere öne gelir. Panel tuşa basıldıktan 60–95 ms sonra ekrandadır; çok hızlı bir ⌘Tab'da hiç çizilmeden geçer. Fareyi oynattığınızda imlecin altındaki kart seçilir; Tab ile ilerlerken imleç seçimi elinizden almaz. Yalnızca klavye ve tıklamayla seçmek için Ayarlar › Pencereler'de **Fareyle seçim**'i kapatın; ⌘Tab ve ⌥Tab için ayrı ayrı.
 
 ![⌘Tab paneli: pencere başına bir kart, tarayıcı profili ve ses cihazı rozetleri](docs/images/tr/cmd-tab.webp)
 
 ### Canlı önizlemeler
 
-⌥Tab aynı geçişi pencerelerin canlı önizlemeleriyle yapar. Pencere çoksa önizlemeler okunur bir boyutta kalır ve panel kendi içinde kayar: Tab ile ya da trackpad ile. Kenardaki yazı yukarıda ve aşağıda kaç pencere daha olduğunu söyler.
+⌥Tab aynı geçişi pencerelerin canlı önizlemeleriyle yapar. Pencere çoksa önizlemeler okunur bir boyutta kalır ve panel kendi içinde kayar: Tab, fare tekerleği ya da trackpad ile. Kenardaki yazı yukarıda ve aşağıda kaç pencere daha olduğunu söyler. Liste görünümü de aynı şekilde kayar, Gruplu görünüm yana kayar.
 
 ![⌥Tab paneli: önizlemeler, üstte ve altta "pencere daha" işareti](docs/images/tr/opt-tab-scroll.webp)
 
@@ -47,7 +47,7 @@ Pencereler Tarayıcılar, Projeler, Geliştirme, Uygulamalar ve Klasörler sütu
 
 ### Filtre ve favoriler
 
-Üstteki çubuktan tek bir uygulamanın pencerelerine daraltın (F ve A). Sağdaki kenar çubuğu sık kullandığınız klasörleri ve Finder favorilerini tek tıkla açar.
+Üstteki çubuktan tek bir uygulamanın pencerelerine daraltın (F ve A). Uygulama çoksa çubuk ekrandan taşmaz, alt satırlara geçer. Sağdaki kenar çubuğu sık kullandığınız klasörleri ve Finder favorilerini tek tıkla açar.
 
 ![Uygulama filtresi ve favori klasörler kenar çubuğu](docs/images/tr/filter-sidebar.webp)
 
@@ -107,7 +107,7 @@ Bir uygulama klavyeyi güvenli giriş moduna aldığında (parola alanları, Ter
 
 ## Ayarlar
 
-Ses, Pencereler, Ekran, İzinler, Genel ve Sürümler sekmeleri. İzinler sekmesi neyin eksik olduğunu ve neden gerektiğini gösterir.
+Ses, Pencereler, Ekran, İzinler, Genel ve Sürümler sekmeleri. İzinler sekmesi neyin eksik olduğunu ve neden gerektiğini gösterir. Pencereler sekmesindeki **Panel açık kalsın**, ⌘Tab / ⌥Tab panelini 20 saniye ekranda tutar; panelin ekran görüntüsünü alabilirsiniz. Sürümler sekmesi yayınlanmış her sürümü, yeni ya da eski, ayarlarınızı koruyarak kurar.
 
 ![Ayarlar penceresi, İzinler sekmesi](docs/images/tr/settings.webp)
 

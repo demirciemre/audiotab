@@ -29,13 +29,13 @@
 
 ### Windows, not apps
 
-⌘Tab shows every open window as its own card, including windows on other desktops, full-screen windows and separate browser profiles. Hold ⌘ and press Tab to move along; release to bring that window forward. The panel is on screen 60–95 ms after the key press, and a very quick ⌘Tab switches without drawing it at all.
+⌘Tab shows every open window as its own card, including windows on other desktops, full-screen windows and separate browser profiles. Hold ⌘ and press Tab to move along; release to bring that window forward. The panel is on screen 60–95 ms after the key press, and a very quick ⌘Tab switches without drawing it at all. Moving the mouse selects the card under the pointer; while you step with Tab, the pointer can't take the selection away. Turn off **Select on hover** in Settings › Windows, separately for ⌘Tab and ⌥Tab, to select only with the keyboard and clicks.
 
 ![⌘Tab panel: one card per window, with browser profile and sound device badges](docs/images/en/cmd-tab.webp)
 
 ### Live previews
 
-⌥Tab does the same with live previews of each window. With many windows, the previews stay at a readable size and the panel scrolls inside itself, with Tab or the trackpad. A line at the edge tells you how many windows are above or below.
+⌥Tab does the same with live previews of each window. With many windows, the previews stay at a readable size and the panel scrolls inside itself, with Tab, the mouse wheel or the trackpad. A line at the edge tells you how many windows are above or below. The list view scrolls the same way, and the grouped view scrolls sideways.
 
 ![⌥Tab panel: previews with "more windows" hints at the top and bottom](docs/images/en/opt-tab-scroll.webp)
 
@@ -47,7 +47,7 @@ Windows are arranged in Browsers, Projects, Development, Apps and Folders column
 
 ### Filter and favorites
 
-Narrow the panel to one app's windows from the bar at the top (F and A). The sidebar on the right opens your frequent folders and Finder favorites in one click.
+Narrow the panel to one app's windows from the bar at the top (F and A). With many apps, the bar wraps onto more rows instead of running off the screen. The sidebar on the right opens your frequent folders and Finder favorites in one click.
 
 ![App filter and favorite folders sidebar](docs/images/en/filter-sidebar.webp)
 
@@ -107,7 +107,7 @@ When an app turns on secure input (password fields, Terminal's secure keyboard e
 
 ## Settings
 
-Sound, Windows, Screen, Permissions, General and Versions tabs. The Permissions tab shows what's missing and why it's needed.
+Sound, Windows, Screen, Permissions, General and Versions tabs. The Permissions tab shows what's missing and why it's needed. **Keep the panel open** in the Windows tab keeps the ⌘Tab / ⌥Tab panel on screen for 20 seconds, so you can take a screenshot of it. The Versions tab installs any released version, newer or older, and keeps your settings.
 
 ![Settings window, Permissions tab](docs/images/en/settings.webp)
 
